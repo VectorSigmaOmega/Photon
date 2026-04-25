@@ -1,0 +1,214 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: swiftbatch-api
+  namespace: swiftbatch
+spec:
+  selector:
+    app: swiftbatch-api
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: swiftbatch-api
+  namespace: swiftbatch
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: swiftbatch-api
+  template:
+    metadata:
+      labels:
+        app: swiftbatch-api
+    spec:
+      initContainers:
+        - name: wait-postgres
+          image: postgres:16-alpine
+          envFrom:
+            - configMapRef:
+                name: swiftbatch-config
+            - secretRef:
+                name: swiftbatch-secrets
+          env:
+            - name: PGPASSWORD
+              valueFrom:
+                secretKeyRef:
+                  key: SWIFTBATCH_POSTGRES_PASSWORD
+                  name: swiftbatch-secrets
+          command:
+            - sh
+            - -c
+            - |
+              until pg_isready \
+                -h "$SWIFTBATCH_POSTGRES_HOST" \
+                -p "$SWIFTBATCH_POSTGRES_PORT" \
+                -U "$SWIFTBATCH_POSTGRES_USER" \
+                -d "$SWIFTBATCH_POSTGRES_DB"; do
+                sleep 2
+              done
+        - name: migrate
+          image: swiftbatch-migrate:latest
+          imagePullPolicy: IfNotPresent
+          envFrom:
+            - configMapRef:
+                name: swiftbatch-config
+            - secretRef:
+                name: swiftbatch-secrets
+        - name: wait-redis
+          image: redis:7-alpine
+          command:
+            - sh
+            - -c
+            - |
+              until redis-cli -h swiftbatch-redis ping; do
+                sleep 2
+              done
+        - name: ensure-bucket
+          image: minio/mc:latest
+          envFrom:
+            - configMapRef:
+                name: swiftbatch-config
+            - secretRef:
+                name: swiftbatch-secrets
+          command:
+            - sh
+            - -c
+            - |
+              until mc alias set local http://swiftbatch-minio:9000 "$SWIFTBATCH_STORAGE_ACCESS_KEY" "$SWIFTBATCH_STORAGE_SECRET_KEY" >/dev/null 2>&1; do
+                sleep 2
+              done
+              mc mb --ignore-existing "local/$SWIFTBATCH_STORAGE_BUCKET" >/dev/null
+      containers:
+        - name: api
+          image: swiftbatch-api:latest
+          imagePullPolicy: IfNotPresent
+          envFrom:
+            - configMapRef:
+                name: swiftbatch-config
+            - secretRef:
+                name: swiftbatch-secrets
+          ports:
+            - containerPort: 8080
+              name: http
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 20
+            periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: swiftbatch-worker
+  namespace: swiftbatch
+spec:
+  selector:
+    app: swiftbatch-worker
+  ports:
+    - name: metrics
+      port: 8081
+      targetPort: 8081
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: swiftbatch-worker
+  namespace: swiftbatch
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: swiftbatch-worker
+  template:
+    metadata:
+      labels:
+        app: swiftbatch-worker
+    spec:
+      initContainers:
+        - name: wait-postgres-schema
+          image: postgres:16-alpine
+          envFrom:
+            - configMapRef:
+                name: swiftbatch-config
+            - secretRef:
+                name: swiftbatch-secrets
+          env:
+            - name: PGPASSWORD
+              valueFrom:
+                secretKeyRef:
+                  key: SWIFTBATCH_POSTGRES_PASSWORD
+                  name: swiftbatch-secrets
+          command:
+            - sh
+            - -c
+            - |
+              until [ "$(
+                psql \
+                  -h "$SWIFTBATCH_POSTGRES_HOST" \
+                  -p "$SWIFTBATCH_POSTGRES_PORT" \
+                  -U "$SWIFTBATCH_POSTGRES_USER" \
+                  -d "$SWIFTBATCH_POSTGRES_DB" \
+                  -tAc "SELECT CASE WHEN to_regclass('public.jobs') IS NOT NULL THEN 1 ELSE 0 END"
+              )" = "1" ]; do
+                sleep 2
+              done
+        - name: wait-redis
+          image: redis:7-alpine
+          command:
+            - sh
+            - -c
+            - |
+              until redis-cli -h swiftbatch-redis ping; do
+                sleep 2
+              done
+        - name: ensure-bucket
+          image: minio/mc:latest
+          envFrom:
+            - configMapRef:
+                name: swiftbatch-config
+            - secretRef:
+                name: swiftbatch-secrets
+          command:
+            - sh
+            - -c
+            - |
+              until mc alias set local http://swiftbatch-minio:9000 "$SWIFTBATCH_STORAGE_ACCESS_KEY" "$SWIFTBATCH_STORAGE_SECRET_KEY" >/dev/null 2>&1; do
+                sleep 2
+              done
+              mc mb --ignore-existing "local/$SWIFTBATCH_STORAGE_BUCKET" >/dev/null
+      containers:
+        - name: worker
+          image: swiftbatch-worker:latest
+          imagePullPolicy: IfNotPresent
+          envFrom:
+            - configMapRef:
+                name: swiftbatch-config
+            - secretRef:
+                name: swiftbatch-secrets
+          ports:
+            - containerPort: 8081
+              name: metrics
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: metrics
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: metrics
+            initialDelaySeconds: 20
+            periodSeconds: 10

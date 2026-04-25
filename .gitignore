@@ -1,0 +1,8 @@
+.env
+.env.local
+.DS_Store
+bin/
+dist/
+tmp/
+coverage.out
+Screenshot *.png

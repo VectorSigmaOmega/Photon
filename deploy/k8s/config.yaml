@@ -1,0 +1,48 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: swiftbatch-config
+  namespace: swiftbatch
+data:
+  GF_SERVER_ROOT_URL: http://grafana.swiftbatch.abhinash.dev
+  MINIO_BROWSER_REDIRECT_URL: http://minio.swiftbatch.abhinash.dev
+  MINIO_SERVER_URL: http://storage.swiftbatch.abhinash.dev
+  SWIFTBATCH_API_ADDR: ":8080"
+  SWIFTBATCH_ENV: production
+  SWIFTBATCH_POSTGRES_DB: swiftbatch
+  SWIFTBATCH_POSTGRES_HOST: swiftbatch-postgres
+  SWIFTBATCH_POSTGRES_PORT: "5432"
+  SWIFTBATCH_POSTGRES_SSLMODE: disable
+  SWIFTBATCH_POSTGRES_USER: swiftbatch
+  SWIFTBATCH_REDIS_ADDR: swiftbatch-redis:6379
+  SWIFTBATCH_REDIS_DB: "0"
+  SWIFTBATCH_REDIS_DLQ_KEY: swiftbatch:jobs:dlq
+  SWIFTBATCH_REDIS_MAX_RETRIES: "3"
+  SWIFTBATCH_REDIS_QUEUE_KEY: swiftbatch:jobs
+  SWIFTBATCH_STORAGE_BUCKET: swiftbatch
+  SWIFTBATCH_STORAGE_DOWNLOAD_URL_TTL: 30m
+  SWIFTBATCH_STORAGE_ENDPOINT: swiftbatch-minio:9000
+  SWIFTBATCH_STORAGE_PUBLIC_BASE_URL: http://storage.swiftbatch.abhinash.dev
+  SWIFTBATCH_STORAGE_REGION: us-east-1
+  SWIFTBATCH_STORAGE_UPLOAD_URL_TTL: 15m
+  SWIFTBATCH_STORAGE_USE_SSL: "false"
+  SWIFTBATCH_WORKER_CONCURRENCY: "4"
+  SWIFTBATCH_WORKER_JOB_TIMEOUT: 2m
+  SWIFTBATCH_WORKER_METRICS_ADDR: ":8081"
+  SWIFTBATCH_WORKER_POLL_TIMEOUT: 5s
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: swiftbatch-secrets
+  namespace: swiftbatch
+type: Opaque
+stringData:
+  GF_SECURITY_ADMIN_PASSWORD: admin
+  GF_SECURITY_ADMIN_USER: admin
+  MINIO_ROOT_PASSWORD: minioadmin
+  MINIO_ROOT_USER: minioadmin
+  POSTGRES_PASSWORD: swiftbatch
+  SWIFTBATCH_POSTGRES_PASSWORD: swiftbatch
+  SWIFTBATCH_STORAGE_ACCESS_KEY: minioadmin
+  SWIFTBATCH_STORAGE_SECRET_KEY: minioadmin

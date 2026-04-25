@@ -1,0 +1,159 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${SWIFTBATCH_POSTGRES_DB:-swiftbatch}
+      POSTGRES_PASSWORD: ${SWIFTBATCH_POSTGRES_PASSWORD:-swiftbatch}
+      POSTGRES_USER: ${SWIFTBATCH_POSTGRES_USER:-swiftbatch}
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${SWIFTBATCH_POSTGRES_USER:-swiftbatch} -d ${SWIFTBATCH_POSTGRES_DB:-swiftbatch}",
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+
+  minio:
+    image: minio/minio:latest
+    command: ["server", "/data", "--console-address", ":9001"]
+    environment:
+      MINIO_ROOT_PASSWORD: ${SWIFTBATCH_STORAGE_SECRET_KEY:-minioadmin}
+      MINIO_ROOT_USER: ${SWIFTBATCH_STORAGE_ACCESS_KEY:-minioadmin}
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio-data:/data
+
+  createbuckets:
+    image: minio/mc:latest
+    depends_on:
+      minio:
+        condition: service_started
+    entrypoint: >
+      /bin/sh -c "
+      until mc alias set local http://minio:9000 ${SWIFTBATCH_STORAGE_ACCESS_KEY:-minioadmin} ${SWIFTBATCH_STORAGE_SECRET_KEY:-minioadmin}; do
+        sleep 2;
+      done;
+      mc mb --ignore-existing local/${SWIFTBATCH_STORAGE_BUCKET:-swiftbatch};
+      exit 0;
+      "
+
+  migrate:
+    build:
+      context: ../..
+      dockerfile: deploy/docker/Dockerfile.migrate
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      SWIFTBATCH_ENV: ${SWIFTBATCH_ENV:-development}
+      SWIFTBATCH_POSTGRES_DB: ${SWIFTBATCH_POSTGRES_DB:-swiftbatch}
+      SWIFTBATCH_POSTGRES_HOST: postgres
+      SWIFTBATCH_POSTGRES_PASSWORD: ${SWIFTBATCH_POSTGRES_PASSWORD:-swiftbatch}
+      SWIFTBATCH_POSTGRES_PORT: ${SWIFTBATCH_POSTGRES_PORT:-5432}
+      SWIFTBATCH_POSTGRES_SSLMODE: ${SWIFTBATCH_POSTGRES_SSLMODE:-disable}
+      SWIFTBATCH_POSTGRES_USER: ${SWIFTBATCH_POSTGRES_USER:-swiftbatch}
+    restart: "no"
+
+  api:
+    build:
+      context: ../..
+      dockerfile: deploy/docker/Dockerfile.api
+    depends_on:
+      createbuckets:
+        condition: service_completed_successfully
+      migrate:
+        condition: service_completed_successfully
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      SWIFTBATCH_API_ADDR: :8080
+      SWIFTBATCH_ENV: ${SWIFTBATCH_ENV:-development}
+      SWIFTBATCH_POSTGRES_DB: ${SWIFTBATCH_POSTGRES_DB:-swiftbatch}
+      SWIFTBATCH_POSTGRES_HOST: postgres
+      SWIFTBATCH_POSTGRES_PASSWORD: ${SWIFTBATCH_POSTGRES_PASSWORD:-swiftbatch}
+      SWIFTBATCH_POSTGRES_PORT: ${SWIFTBATCH_POSTGRES_PORT:-5432}
+      SWIFTBATCH_POSTGRES_SSLMODE: ${SWIFTBATCH_POSTGRES_SSLMODE:-disable}
+      SWIFTBATCH_POSTGRES_USER: ${SWIFTBATCH_POSTGRES_USER:-swiftbatch}
+      SWIFTBATCH_REDIS_ADDR: redis:6379
+      SWIFTBATCH_REDIS_DB: ${SWIFTBATCH_REDIS_DB:-0}
+      SWIFTBATCH_REDIS_DLQ_KEY: ${SWIFTBATCH_REDIS_DLQ_KEY:-swiftbatch:jobs:dlq}
+      SWIFTBATCH_REDIS_MAX_RETRIES: ${SWIFTBATCH_REDIS_MAX_RETRIES:-3}
+      SWIFTBATCH_REDIS_PASSWORD: ${SWIFTBATCH_REDIS_PASSWORD:-}
+      SWIFTBATCH_REDIS_QUEUE_KEY: ${SWIFTBATCH_REDIS_QUEUE_KEY:-swiftbatch:jobs}
+      SWIFTBATCH_STORAGE_ACCESS_KEY: ${SWIFTBATCH_STORAGE_ACCESS_KEY:-minioadmin}
+      SWIFTBATCH_STORAGE_BUCKET: ${SWIFTBATCH_STORAGE_BUCKET:-swiftbatch}
+      SWIFTBATCH_STORAGE_ENDPOINT: minio:9000
+      SWIFTBATCH_STORAGE_PUBLIC_BASE_URL: ${SWIFTBATCH_STORAGE_PUBLIC_BASE_URL:-http://localhost:9000}
+      SWIFTBATCH_STORAGE_REGION: ${SWIFTBATCH_STORAGE_REGION:-us-east-1}
+      SWIFTBATCH_STORAGE_SECRET_KEY: ${SWIFTBATCH_STORAGE_SECRET_KEY:-minioadmin}
+      SWIFTBATCH_STORAGE_DOWNLOAD_URL_TTL: ${SWIFTBATCH_STORAGE_DOWNLOAD_URL_TTL:-30m}
+      SWIFTBATCH_STORAGE_UPLOAD_URL_TTL: ${SWIFTBATCH_STORAGE_UPLOAD_URL_TTL:-15m}
+      SWIFTBATCH_STORAGE_USE_SSL: ${SWIFTBATCH_STORAGE_USE_SSL:-false}
+    ports:
+      - "${SWIFTBATCH_API_PUBLISHED_PORT:-18080}:8080"
+
+  worker:
+    build:
+      context: ../..
+      dockerfile: deploy/docker/Dockerfile.worker
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      SWIFTBATCH_ENV: ${SWIFTBATCH_ENV:-development}
+      SWIFTBATCH_POSTGRES_DB: ${SWIFTBATCH_POSTGRES_DB:-swiftbatch}
+      SWIFTBATCH_POSTGRES_HOST: postgres
+      SWIFTBATCH_POSTGRES_PASSWORD: ${SWIFTBATCH_POSTGRES_PASSWORD:-swiftbatch}
+      SWIFTBATCH_POSTGRES_PORT: ${SWIFTBATCH_POSTGRES_PORT:-5432}
+      SWIFTBATCH_POSTGRES_SSLMODE: ${SWIFTBATCH_POSTGRES_SSLMODE:-disable}
+      SWIFTBATCH_POSTGRES_USER: ${SWIFTBATCH_POSTGRES_USER:-swiftbatch}
+      SWIFTBATCH_REDIS_ADDR: redis:6379
+      SWIFTBATCH_REDIS_DB: ${SWIFTBATCH_REDIS_DB:-0}
+      SWIFTBATCH_REDIS_DLQ_KEY: ${SWIFTBATCH_REDIS_DLQ_KEY:-swiftbatch:jobs:dlq}
+      SWIFTBATCH_REDIS_MAX_RETRIES: ${SWIFTBATCH_REDIS_MAX_RETRIES:-3}
+      SWIFTBATCH_REDIS_PASSWORD: ${SWIFTBATCH_REDIS_PASSWORD:-}
+      SWIFTBATCH_REDIS_QUEUE_KEY: ${SWIFTBATCH_REDIS_QUEUE_KEY:-swiftbatch:jobs}
+      SWIFTBATCH_WORKER_METRICS_ADDR: ${SWIFTBATCH_WORKER_METRICS_ADDR:-:8081}
+      SWIFTBATCH_STORAGE_ACCESS_KEY: ${SWIFTBATCH_STORAGE_ACCESS_KEY:-minioadmin}
+      SWIFTBATCH_STORAGE_BUCKET: ${SWIFTBATCH_STORAGE_BUCKET:-swiftbatch}
+      SWIFTBATCH_STORAGE_ENDPOINT: minio:9000
+      SWIFTBATCH_STORAGE_PUBLIC_BASE_URL: ${SWIFTBATCH_STORAGE_PUBLIC_BASE_URL:-http://localhost:9000}
+      SWIFTBATCH_STORAGE_REGION: ${SWIFTBATCH_STORAGE_REGION:-us-east-1}
+      SWIFTBATCH_STORAGE_SECRET_KEY: ${SWIFTBATCH_STORAGE_SECRET_KEY:-minioadmin}
+      SWIFTBATCH_STORAGE_DOWNLOAD_URL_TTL: ${SWIFTBATCH_STORAGE_DOWNLOAD_URL_TTL:-30m}
+      SWIFTBATCH_STORAGE_UPLOAD_URL_TTL: ${SWIFTBATCH_STORAGE_UPLOAD_URL_TTL:-15m}
+      SWIFTBATCH_STORAGE_USE_SSL: ${SWIFTBATCH_STORAGE_USE_SSL:-false}
+    ports:
+      - "${SWIFTBATCH_WORKER_METRICS_PUBLISHED_PORT:-18081}:8081"
+
+volumes:
+  minio-data:
+  postgres-data:
+  redis-data:
