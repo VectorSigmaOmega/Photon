@@ -5,6 +5,15 @@ on:
   push:
     branches:
       - main
+    paths:
+      - ".github/workflows/deploy.yml"
+      - "cmd/**"
+      - "internal/**"
+      - "deploy/docker/**"
+      - "deploy/k8s/**"
+      - "scripts/deploy-k8s.sh"
+      - "go.mod"
+      - "go.sum"
 
 permissions:
   contents: read

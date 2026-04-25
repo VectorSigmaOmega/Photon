@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>SwiftBatch</title>
+    <meta
+      name="description"
+      content="SwiftBatch is an async image conversion demo backed by Go, Redis, Postgres, MinIO, and Kubernetes."
+    />
+    <link rel="stylesheet" href="/app.css" />
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="hero">
+        <p class="eyebrow">Async image processing demo</p>
+        <h1>SwiftBatch converts one upload into multiple production-ready variants.</h1>
+        <p class="hero-copy">
+          This page drives the real backend: browser upload, presigned storage handoff, queued job
+          processing, and downloadable outputs.
+        </p>
+        <div class="hero-meta">
+          <span>Go API + worker</span>
+          <span>Redis queue</span>
+          <span>Postgres state</span>
+          <span>MinIO objects</span>
+        </div>
+      </header>
+
+      <main class="content-grid">
+        <section class="panel panel-form">
+          <div class="panel-header">
+            <h2>Run a job</h2>
+            <p>Upload one image, pick the output format, and let the worker generate variants.</p>
+          </div>
+
+          <form id="job-form" class="stack">
+            <label class="field">
+              <span>Source image</span>
+              <input id="source-file" name="source-file" type="file" accept="image/png,image/jpeg,image/webp,image/avif" required />
+            </label>
+
+            <label class="field">
+              <span>Output format</span>
+              <select id="output-format" name="output-format">
+                <option value="webp">webp</option>
+                <option value="avif">avif</option>
+                <option value="jpg">jpg</option>
+                <option value="png">png</option>
+              </select>
+            </label>
+
+            <fieldset class="fieldsets">
+              <legend>Variants</legend>
+              <p class="fieldset-copy">Choose at least one. These map directly to worker transforms.</p>
+
+              <label class="variant-card">
+                <input type="checkbox" name="variant" value="thumb" checked />
+                <span class="variant-name">thumb</span>
+                <span class="variant-spec">320 × 320, balanced</span>
+              </label>
+
+              <label class="variant-card">
+                <input type="checkbox" name="variant" value="card" checked />
+                <span class="variant-name">card</span>
+                <span class="variant-spec">960 × 960, balanced</span>
+              </label>
+
+              <label class="variant-card">
+                <input type="checkbox" name="variant" value="detail" checked />
+                <span class="variant-name">detail</span>
+                <span class="variant-spec">1600 × 1600, high</span>
+              </label>
+            </fieldset>
+
+            <div class="form-actions">
+              <button id="submit-button" type="submit">Upload and process</button>
+              <a class="secondary-link" href="https://github.com/VectorSigmaOmega/SwiftBatch" target="_blank" rel="noreferrer">View repository</a>
+            </div>
+          </form>
+
+          <div id="message-banner" class="message-banner" hidden></div>
+        </section>
+
+        <section class="panel panel-status">
+          <div class="panel-header">
+            <h2>Job state</h2>
+            <p>The UI polls the live API until the worker finishes or the job fails.</p>
+          </div>
+
+          <div class="status-stack">
+            <div class="status-block">
+              <span class="status-label">Current stage</span>
+              <strong id="job-stage">Waiting for submission</strong>
+              <p id="job-stage-detail" class="muted">No upload in progress yet.</p>
+            </div>
+
+            <div class="status-block">
+              <span class="status-label">Job ID</span>
+              <code id="job-id">Not created</code>
+            </div>
+
+            <div class="status-block">
+              <span class="status-label">Source object key</span>
+              <code id="object-key">Not uploaded</code>
+            </div>
+
+            <div class="status-block">
+              <span class="status-label">Results</span>
+              <div id="results-list" class="results-list">
+                <p class="muted">Outputs will appear here after the worker completes.</p>
+              </div>
+            </div>
+
+            <button id="retry-button" class="ghost-button" type="button" hidden>Retry failed job</button>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script src="/app.js" defer></script>
+  </body>
+</html>

@@ -53,8 +53,10 @@ func New(
 	}
 
 	rateLimiter := newRateLimiter(log, cfg.RateLimit)
+	frontend := frontendHandler()
 
 	mux := http.NewServeMux()
+	mux.Handle("/", frontend)
 	mux.Handle("GET /healthz", metrics.Instrument("healthz", http.HandlerFunc(s.handleHealthz)))
 	mux.Handle("GET /readyz", metrics.Instrument("readyz", http.HandlerFunc(s.handleReadyz)))
 	mux.Handle("GET /metrics", metrics.Handler())

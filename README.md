@@ -54,6 +54,7 @@ go run ./cmd/worker
 ## Current Status
 
 - `api` exposes `POST /v1/uploads/presign`, `POST /v1/jobs`, `GET /v1/jobs/:id`, `GET /v1/jobs/:id/results`, `GET /healthz`, `GET /readyz`, and `GET /metrics`
+- `GET /` now serves a minimal browser UI for upload, job submission, status polling, retry, and output downloads
 - `worker` now exposes Prometheus metrics on `http://localhost:18081/metrics` plus a simple `GET /healthz`
 - new jobs are persisted in Postgres and enqueued into Redis
 - uploads can now be pushed directly to MinIO using a presigned `PUT` URL returned by the API
@@ -68,6 +69,7 @@ go run ./cmd/worker
 - Docker Compose includes `api`, `worker`, `redis`, `postgres`, `minio`, and a one-shot `createbuckets` init container
 - `deploy/k8s/` now contains single-node `k3s` manifests for the full demo stack, including Traefik ingresses plus Prometheus and Grafana
 - the SkyServer deployment now uses Traefik with Let’s Encrypt HTTP-01, so the public hosts are served over valid HTTPS
+- MinIO bucket bootstrap now applies explicit browser CORS for the frontend origin so presigned uploads work from the product UI
 
 ## Decision Notes
 
@@ -92,7 +94,7 @@ Next implementation steps:
 
 - add ephemeral data cleanup automation
 - add demo-oriented docs and sample curl flow
-- build the user-facing frontend and engineering page
+- expand the user-facing frontend polish and add the engineering page
 
 Deployment note:
 

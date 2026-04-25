@@ -19,22 +19,24 @@ Completed:
 - Docker images
 - single-node `k3s` manifests
 - GitHub Actions CI/CD scaffolding
+- first live CI/CD deployment run
+- minimal browser frontend for upload, polling, retry, and results
 
 In progress next:
 
-- first live CI/CD deployment run
+- README finalization
 
 Remaining after that:
 
-- README finalization
 - architecture diagram
 - demo instructions
 - ephemeral data cleanup automation
+- frontend polish and `Engineering` page
 
 Footnote:
 
-- the user-facing frontend has not been built yet
-- for portfolio value, the eventual frontend should include a clean product flow plus a visible `Engineering` or `How It's Built` entry point that surfaces the system design without turning the homepage into a wall of infrastructure details
+- the user-facing frontend now exists as a minimal product flow on `/`
+- for portfolio value, the next frontend step should add polish plus a visible `Engineering` or `How It's Built` entry point that surfaces the system design without turning the homepage into a wall of infrastructure details
 
 ## Current Delivery Plan
 
@@ -93,8 +95,7 @@ The CI/CD scaffolding now delivers:
 
 What still remains operationally is:
 
-- configure GitHub repository variables and secrets
-- run the first deployment from GitHub Actions against the SkyServer VPS
+- keep the deployment workflow maintained as GitHub updates its Actions runtime
 
 ## Non-Goals For The Next Phase
 

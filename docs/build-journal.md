@@ -785,3 +785,45 @@ The important lesson is not "never make mistakes during ops work." The lesson is
 - separate the TLS change from unrelated rollout issues
 
 Once Traefik finished ACME issuance, the public hosts served valid Let's Encrypt certificates and the browser warning problem went away.
+
+### A minimal frontend finally made the deployment feel real
+
+Once the backend was live, the main public URL still returned `404`.
+
+That was technically fine for an API, but wrong for a portfolio project.
+
+The key decision was to avoid jumping straight into a separate frontend stack. That would have added more deployment surface area before proving the most important thing:
+
+- can a real browser use the existing API successfully
+
+So the first frontend was intentionally small and practical:
+
+- serve embedded static files directly from the Go API at `/`
+- upload a real image from the browser
+- request a presigned upload URL
+- `PUT` the file to MinIO
+- create the async job
+- poll job status
+- show download links when processing completes
+- allow manual retry when a job ends in `failed` or `dead_lettered`
+
+This choice kept the architecture stable:
+
+- same API binary
+- same ingress
+- same deploy workflow
+- no separate frontend build system yet
+
+One subtle issue came with this browser flow:
+
+- presigned uploads go to the storage host, not the API host
+- from the browser's point of view, that is cross-origin traffic
+
+That meant MinIO needed explicit CORS permission for the frontend origin. Without that, the UI could look correct and still fail at the upload step.
+
+The fix was to make bucket bootstrap configure CORS alongside bucket creation in both:
+
+- Docker Compose
+- the `k3s` init-container flow
+
+This is a good example of the kind of problem that only appears when a system stops being "backend tested" and starts being "browser tested."
