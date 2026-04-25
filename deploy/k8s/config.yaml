@@ -4,9 +4,9 @@ metadata:
   name: swiftbatch-config
   namespace: swiftbatch
 data:
-  GF_SERVER_ROOT_URL: http://grafana.swiftbatch.abhinash.dev
-  MINIO_BROWSER_REDIRECT_URL: http://minio.swiftbatch.abhinash.dev
-  MINIO_SERVER_URL: http://storage.swiftbatch.abhinash.dev
+  GF_SERVER_ROOT_URL: https://grafana.swiftbatch.abhinash.dev
+  MINIO_BROWSER_REDIRECT_URL: https://minio.swiftbatch.abhinash.dev
+  MINIO_SERVER_URL: https://storage.swiftbatch.abhinash.dev
   SWIFTBATCH_API_ADDR: ":8080"
   SWIFTBATCH_API_JOBS_CREATE_RATE_LIMIT_BURST: "10"
   SWIFTBATCH_API_JOBS_CREATE_RATE_LIMIT_PER_MINUTE: "30"
@@ -30,7 +30,7 @@ data:
   SWIFTBATCH_STORAGE_BUCKET: swiftbatch
   SWIFTBATCH_STORAGE_DOWNLOAD_URL_TTL: 30m
   SWIFTBATCH_STORAGE_ENDPOINT: swiftbatch-minio:9000
-  SWIFTBATCH_STORAGE_PUBLIC_BASE_URL: http://storage.swiftbatch.abhinash.dev
+  SWIFTBATCH_STORAGE_PUBLIC_BASE_URL: https://storage.swiftbatch.abhinash.dev
   SWIFTBATCH_STORAGE_REGION: us-east-1
   SWIFTBATCH_STORAGE_UPLOAD_URL_TTL: 15m
   SWIFTBATCH_STORAGE_USE_SSL: "false"

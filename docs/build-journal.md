@@ -744,3 +744,44 @@ The first configured defaults were:
 - retry: `6/min` with burst `2`
 
 This was not meant to be a perfect distributed rate-limiting system. It was meant to close a real operational hole with the smallest implementation that matches the current architecture.
+
+### TLS had to become real once browsers forced HTTPS
+
+After the first live deployment, the public hosts were reachable over plain HTTP, but modern browsers kept upgrading to HTTPS automatically.
+
+That exposed a real usability problem:
+
+- the service itself was healthy
+- but the browser experience still looked broken because there was no trusted certificate
+
+The fix was to stop treating TLS as optional deployment polish and make it part of the real environment.
+
+The chosen approach fit the existing stack:
+
+- keep the bundled `k3s` Traefik
+- customize it with a `HelmChartConfig`
+- enable Let's Encrypt HTTP-01
+- persist ACME state on disk
+- redirect HTTP to HTTPS
+
+This mattered for two reasons:
+
+- browsers would now open the app normally
+- presigned MinIO URLs also needed the public storage host to move to `https`
+
+One subtle failure happened during the manual TLS rollout:
+
+- the one-off deploy command accidentally reused the migrate image for the API container image
+- that caused the new API pod to crash-loop because the migration binary exits after finishing its work
+
+The fix was simple once the pod description made the problem obvious:
+
+- restore the API deployment image to `ghcr.io/vectorsigmaomega/swiftbatch-api:latest`
+
+The important lesson is not "never make mistakes during ops work." The lesson is:
+
+- verify the live pod spec after a manual deployment
+- look at the actual image names when behavior is strange
+- separate the TLS change from unrelated rollout issues
+
+Once Traefik finished ACME issuance, the public hosts served valid Let's Encrypt certificates and the browser warning problem went away.

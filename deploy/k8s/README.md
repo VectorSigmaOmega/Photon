@@ -97,12 +97,18 @@ Because the published GHCR images are currently public, the cluster does not nee
 
 ## Access
 
-- API: `http://swiftbatch.abhinash.dev`
-- MinIO object endpoint for presigned URLs: `http://storage.swiftbatch.abhinash.dev`
-- MinIO console: `http://minio.swiftbatch.abhinash.dev`
-- Grafana: `http://grafana.swiftbatch.abhinash.dev`
+- API: `https://swiftbatch.abhinash.dev`
+- MinIO object endpoint for presigned URLs: `https://storage.swiftbatch.abhinash.dev`
+- MinIO console: `https://minio.swiftbatch.abhinash.dev`
+- Grafana: `https://grafana.swiftbatch.abhinash.dev`
 - Prometheus: `kubectl -n swiftbatch port-forward svc/swiftbatch-prometheus 9090:9090`
 
-## Decision Note
+## TLS Note
 
-The ingress manifests are HTTP-first. TLS termination is intentionally left out of these repo manifests because certificate provisioning is environment-specific on `k3s` and depends on how Traefik is configured on the target VPS. Once the domain is attached on the target server, switch the hosts to HTTPS and add Traefik/certificate resources that fit the cluster.
+The repo now includes [traefik-config.yaml](/home/dell/dev/Carousell/SwiftBatch/deploy/k8s/traefik-config.yaml), which adds a `HelmChartConfig` for the bundled `k3s` Traefik install:
+
+- persistent ACME storage at `/data/acme.json`
+- Let's Encrypt HTTP-01 certificate issuance
+- HTTP-to-HTTPS redirection on the `web` entrypoint
+
+The ingress resources are configured for the `websecure` entrypoint and reference the `letsencrypt` certificate resolver.

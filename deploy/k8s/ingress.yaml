@@ -4,9 +4,14 @@ metadata:
   name: swiftbatch-api
   namespace: swiftbatch
   annotations:
-    traefik.ingress.kubernetes.io/router.entrypoints: web
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    traefik.ingress.kubernetes.io/router.tls: "true"
+    traefik.ingress.kubernetes.io/router.tls.certresolver: letsencrypt
 spec:
   ingressClassName: traefik
+  tls:
+    - hosts:
+        - swiftbatch.abhinash.dev
   rules:
     - host: swiftbatch.abhinash.dev
       http:
@@ -25,9 +30,14 @@ metadata:
   name: swiftbatch-minio-object
   namespace: swiftbatch
   annotations:
-    traefik.ingress.kubernetes.io/router.entrypoints: web
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    traefik.ingress.kubernetes.io/router.tls: "true"
+    traefik.ingress.kubernetes.io/router.tls.certresolver: letsencrypt
 spec:
   ingressClassName: traefik
+  tls:
+    - hosts:
+        - storage.swiftbatch.abhinash.dev
   rules:
     - host: storage.swiftbatch.abhinash.dev
       http:
@@ -46,9 +56,14 @@ metadata:
   name: swiftbatch-minio-console
   namespace: swiftbatch
   annotations:
-    traefik.ingress.kubernetes.io/router.entrypoints: web
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    traefik.ingress.kubernetes.io/router.tls: "true"
+    traefik.ingress.kubernetes.io/router.tls.certresolver: letsencrypt
 spec:
   ingressClassName: traefik
+  tls:
+    - hosts:
+        - minio.swiftbatch.abhinash.dev
   rules:
     - host: minio.swiftbatch.abhinash.dev
       http:
@@ -67,9 +82,14 @@ metadata:
   name: swiftbatch-grafana
   namespace: swiftbatch
   annotations:
-    traefik.ingress.kubernetes.io/router.entrypoints: web
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    traefik.ingress.kubernetes.io/router.tls: "true"
+    traefik.ingress.kubernetes.io/router.tls.certresolver: letsencrypt
 spec:
   ingressClassName: traefik
+  tls:
+    - hosts:
+        - grafana.swiftbatch.abhinash.dev
   rules:
     - host: grafana.swiftbatch.abhinash.dev
       http:

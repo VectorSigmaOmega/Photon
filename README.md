@@ -67,10 +67,11 @@ go run ./cmd/worker
 - Postgres migration flow is wired through `cmd/migrate`
 - Docker Compose includes `api`, `worker`, `redis`, `postgres`, `minio`, and a one-shot `createbuckets` init container
 - `deploy/k8s/` now contains single-node `k3s` manifests for the full demo stack, including Traefik ingresses plus Prometheus and Grafana
+- the SkyServer deployment now uses Traefik with Let’s Encrypt HTTP-01, so the public hosts are served over valid HTTPS
 
 ## Decision Notes
 
-- the `k3s` ingress manifests are HTTP-first; TLS certificate provisioning is intentionally left to the target Traefik setup because that part is environment-specific on a single VPS
+- the live SkyServer target now uses bundled `k3s` Traefik plus a `HelmChartConfig` override for Let’s Encrypt and HTTP-to-HTTPS redirection
 
 Further reading:
 
@@ -89,9 +90,9 @@ Implementation notes:
 
 Next implementation steps:
 
-- configure GitHub Actions secrets/variables and run the first deploy
 - add ephemeral data cleanup automation
 - add demo-oriented docs and sample curl flow
+- build the user-facing frontend and engineering page
 
 Deployment note:
 
