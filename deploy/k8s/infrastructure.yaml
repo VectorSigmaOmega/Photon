@@ -178,6 +178,11 @@ spec:
             - --console-address
             - :9001
           env:
+            - name: MINIO_API_CORS_ALLOW_ORIGIN
+              valueFrom:
+                configMapKeyRef:
+                  key: MINIO_API_CORS_ALLOW_ORIGIN
+                  name: swiftbatch-config
             - name: MINIO_BROWSER_REDIRECT_URL
               valueFrom:
                 configMapKeyRef:

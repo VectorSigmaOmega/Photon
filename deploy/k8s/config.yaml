@@ -5,6 +5,7 @@ metadata:
   namespace: swiftbatch
 data:
   GF_SERVER_ROOT_URL: https://grafana.swiftbatch.abhinash.dev
+  MINIO_API_CORS_ALLOW_ORIGIN: https://swiftbatch.abhinash.dev
   MINIO_BROWSER_REDIRECT_URL: https://minio.swiftbatch.abhinash.dev
   MINIO_SERVER_URL: https://storage.swiftbatch.abhinash.dev
   SWIFTBATCH_API_ADDR: ":8080"
@@ -22,7 +23,6 @@ data:
   SWIFTBATCH_POSTGRES_PORT: "5432"
   SWIFTBATCH_POSTGRES_SSLMODE: disable
   SWIFTBATCH_POSTGRES_USER: swiftbatch
-  SWIFTBATCH_PUBLIC_WEB_ORIGIN: https://swiftbatch.abhinash.dev
   SWIFTBATCH_REDIS_ADDR: swiftbatch-redis:6379
   SWIFTBATCH_REDIS_DB: "0"
   SWIFTBATCH_REDIS_DLQ_KEY: swiftbatch:jobs:dlq

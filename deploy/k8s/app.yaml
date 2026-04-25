@@ -83,19 +83,6 @@ spec:
                 sleep 2
               done
               mc mb --ignore-existing "local/$SWIFTBATCH_STORAGE_BUCKET" >/dev/null
-              cat <<EOF | mc cors set "local/$SWIFTBATCH_STORAGE_BUCKET" -
-              <CORSConfiguration>
-                <CORSRule>
-                  <AllowedOrigin>$SWIFTBATCH_PUBLIC_WEB_ORIGIN</AllowedOrigin>
-                  <AllowedMethod>GET</AllowedMethod>
-                  <AllowedMethod>PUT</AllowedMethod>
-                  <AllowedMethod>HEAD</AllowedMethod>
-                  <AllowedHeader>*</AllowedHeader>
-                  <ExposeHeader>ETag</ExposeHeader>
-                  <MaxAgeSeconds>3600</MaxAgeSeconds>
-                </CORSRule>
-              </CORSConfiguration>
-              EOF
       containers:
         - name: api
           image: swiftbatch-api:latest
@@ -201,19 +188,6 @@ spec:
                 sleep 2
               done
               mc mb --ignore-existing "local/$SWIFTBATCH_STORAGE_BUCKET" >/dev/null
-              cat <<EOF | mc cors set "local/$SWIFTBATCH_STORAGE_BUCKET" -
-              <CORSConfiguration>
-                <CORSRule>
-                  <AllowedOrigin>$SWIFTBATCH_PUBLIC_WEB_ORIGIN</AllowedOrigin>
-                  <AllowedMethod>GET</AllowedMethod>
-                  <AllowedMethod>PUT</AllowedMethod>
-                  <AllowedMethod>HEAD</AllowedMethod>
-                  <AllowedHeader>*</AllowedHeader>
-                  <ExposeHeader>ETag</ExposeHeader>
-                  <MaxAgeSeconds>3600</MaxAgeSeconds>
-                </CORSRule>
-              </CORSConfiguration>
-              EOF
       containers:
         - name: worker
           image: swiftbatch-worker:latest

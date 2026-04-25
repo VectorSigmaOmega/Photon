@@ -821,9 +821,17 @@ One subtle issue came with this browser flow:
 
 That meant MinIO needed explicit CORS permission for the frontend origin. Without that, the UI could look correct and still fail at the upload step.
 
-The fix was to make bucket bootstrap configure CORS alongside bucket creation in both:
+The first attempted fix was to configure CORS with `mc cors set` during bucket bootstrap.
 
-- Docker Compose
-- the `k3s` init-container flow
+That turned out to be the wrong operational path for this setup. The MinIO client returned:
+
+- `A header you provided implies functionality that is not implemented.`
+
+So the implementation was corrected to use MinIO's global CORS setting instead:
+
+- Docker Compose sets `MINIO_API_CORS_ALLOW_ORIGIN`
+- the `k3s` deployment sets the same value from config
+
+That kept the browser upload flow working without turning deployment into a repeated init-container failure.
 
 This is a good example of the kind of problem that only appears when a system stops being "backend tested" and starts being "browser tested."

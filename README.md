@@ -69,7 +69,7 @@ go run ./cmd/worker
 - Docker Compose includes `api`, `worker`, `redis`, `postgres`, `minio`, and a one-shot `createbuckets` init container
 - `deploy/k8s/` now contains single-node `k3s` manifests for the full demo stack, including Traefik ingresses plus Prometheus and Grafana
 - the SkyServer deployment now uses Traefik with Let’s Encrypt HTTP-01, so the public hosts are served over valid HTTPS
-- MinIO bucket bootstrap now applies explicit browser CORS for the frontend origin so presigned uploads work from the product UI
+- MinIO now sets explicit browser CORS for the frontend origin so presigned uploads work from the product UI
 
 ## Decision Notes
 

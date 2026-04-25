@@ -92,7 +92,7 @@ kubectl -n swiftbatch get pods
 ```
 
 The API pod runs the migration binary as an init container before the main server starts. The worker waits for the schema and MinIO bucket before it starts processing.
-The API root path serves the minimal browser frontend, and the MinIO bucket bootstrap also applies a bucket CORS policy for `SWIFTBATCH_PUBLIC_WEB_ORIGIN` so browser-based presigned uploads work.
+The API root path serves the minimal browser frontend, and the MinIO deployment applies global CORS for `MINIO_API_CORS_ALLOW_ORIGIN` so browser-based presigned uploads work.
 
 Because the published GHCR images are currently public, the cluster does not need an image pull secret. If those packages are made private later, reintroduce a pull secret at that time.
 

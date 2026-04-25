@@ -36,6 +36,7 @@ services:
     image: minio/minio:latest
     command: ["server", "/data", "--console-address", ":9001"]
     environment:
+      MINIO_API_CORS_ALLOW_ORIGIN: ${MINIO_API_CORS_ALLOW_ORIGIN:-http://localhost:18080}
       MINIO_ROOT_PASSWORD: ${SWIFTBATCH_STORAGE_SECRET_KEY:-minioadmin}
       MINIO_ROOT_USER: ${SWIFTBATCH_STORAGE_ACCESS_KEY:-minioadmin}
     ports:
@@ -55,19 +56,6 @@ services:
         sleep 2;
       done;
       mc mb --ignore-existing local/${SWIFTBATCH_STORAGE_BUCKET:-swiftbatch};
-      cat <<'EOF' | mc cors set local/${SWIFTBATCH_STORAGE_BUCKET:-swiftbatch} -
-      <CORSConfiguration>
-        <CORSRule>
-          <AllowedOrigin>${SWIFTBATCH_PUBLIC_WEB_ORIGIN:-http://localhost:18080}</AllowedOrigin>
-          <AllowedMethod>GET</AllowedMethod>
-          <AllowedMethod>PUT</AllowedMethod>
-          <AllowedMethod>HEAD</AllowedMethod>
-          <AllowedHeader>*</AllowedHeader>
-          <ExposeHeader>ETag</ExposeHeader>
-          <MaxAgeSeconds>3600</MaxAgeSeconds>
-        </CORSRule>
-      </CORSConfiguration>
-      EOF
       exit 0;
       "
 
