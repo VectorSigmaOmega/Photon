@@ -26,8 +26,6 @@ spec:
       labels:
         app: swiftbatch-api
     spec:
-      imagePullSecrets:
-        - name: ghcr-pull-secret
       initContainers:
         - name: wait-postgres
           image: postgres:16-alpine
@@ -138,8 +136,6 @@ spec:
       labels:
         app: swiftbatch-worker
     spec:
-      imagePullSecrets:
-        - name: ghcr-pull-secret
       initContainers:
         - name: wait-postgres-schema
           image: postgres:16-alpine

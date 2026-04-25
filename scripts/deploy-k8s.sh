@@ -20,8 +20,6 @@ image_tag() {
   echo "${image##*:}"
 }
 
-require_env GHCR_PULL_USERNAME
-require_env GHCR_PULL_TOKEN
 require_env GF_SECURITY_ADMIN_USER
 require_env GF_SECURITY_ADMIN_PASSWORD
 require_env MINIO_ROOT_USER
@@ -66,13 +64,6 @@ images:
 EOF
 
 kubectl --kubeconfig "$kubeconfig" create namespace "$namespace" \
-  --dry-run=client -o yaml | kubectl --kubeconfig "$kubeconfig" apply -f -
-
-kubectl --kubeconfig "$kubeconfig" create secret docker-registry ghcr-pull-secret \
-  --namespace "$namespace" \
-  --docker-server ghcr.io \
-  --docker-username "$GHCR_PULL_USERNAME" \
-  --docker-password "$GHCR_PULL_TOKEN" \
   --dry-run=client -o yaml | kubectl --kubeconfig "$kubeconfig" apply -f -
 
 kubectl --kubeconfig "$kubeconfig" create secret generic swiftbatch-secrets \

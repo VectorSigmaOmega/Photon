@@ -33,8 +33,7 @@ This keeps sensitive values out of the repo while preserving simple base YAML.
 You can still use the manifests manually if you want, but then you must:
 
 1. create `swiftbatch-secrets` yourself
-2. create `ghcr-pull-secret` yourself if images are private
-3. replace the app image names with real registry tags before applying
+2. replace the app image names with real registry tags before applying
 
 If you prefer building directly on the cluster host, you can still:
 
@@ -71,8 +70,6 @@ If those change later, update both [config.yaml](/home/dell/dev/Carousell/SwiftB
 Recommended:
 
 ```bash
-export GHCR_PULL_USERNAME=VectorSigmaOmega
-export GHCR_PULL_TOKEN=...
 export GF_SECURITY_ADMIN_USER=...
 export GF_SECURITY_ADMIN_PASSWORD=...
 export MINIO_ROOT_USER=...
@@ -95,6 +92,8 @@ kubectl -n swiftbatch get pods
 ```
 
 The API pod runs the migration binary as an init container before the main server starts. The worker waits for the schema and MinIO bucket before it starts processing.
+
+Because the published GHCR images are currently public, the cluster does not need an image pull secret. If those packages are made private later, reintroduce a pull secret at that time.
 
 ## Access
 

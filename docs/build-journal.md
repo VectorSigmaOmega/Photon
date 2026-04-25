@@ -677,7 +677,7 @@ This is a good reminder that infrastructure plans drift, and the docs need to dr
 
 ### The GitHub Container Registry credential tradeoff
 
-When the first CI/CD deployment was wired, the cluster needed a credential to pull private images from `ghcr.io`.
+When the first CI/CD deployment was wired, the initial assumption was that the cluster needed a credential to pull images from `ghcr.io`.
 
 There are two separate GitHub authentication paths involved:
 
@@ -686,36 +686,33 @@ There are two separate GitHub authentication paths involved:
 
 The workflow can push with GitHub Actions' built-in `GITHUB_TOKEN`, but the cluster cannot use that ephemeral workflow token after the job is over. It needs a long-lived credential stored as a Kubernetes image pull secret.
 
-The clean long-term solution is:
+The workflow can push with GitHub Actions' built-in `GITHUB_TOKEN`, but the cluster cannot use that ephemeral workflow token after the job is over. That is why a separate long-lived pull credential often exists in private-package setups.
 
-- create a dedicated GitHub token with only `read:packages`
-- store that in the repo as `GHCR_PULL_TOKEN`
-- let the cluster use that least-privilege credential
+The first bootstrap temporarily used a broad GitHub token as `GHCR_PULL_TOKEN` because that was the normal pattern and it unblocked the first live deployment.
 
-During the bootstrap step, that token did not yet exist, and GitHub's CLI cannot create a classic PAT directly.
+After the deployment succeeded, the actual package visibility was checked and all published SwiftBatch container images were confirmed to be `public`.
 
-So the temporary choice was:
+That changed the right answer.
 
-- reuse the already-authenticated local GitHub token
-- store it as `GHCR_PULL_TOKEN`
-- accept that it is broader than ideal for the first deployment
+For a public repository with public GHCR images:
 
-Why that is not ideal:
+- GitHub Actions still needs `GITHUB_TOKEN` to push images during the workflow
+- the cluster does not need a separate pull secret
+- Kubernetes can pull the images anonymously
 
-- the current token has many scopes beyond package read access
-- if that token leaks from GitHub secrets or from the cluster pull secret, the blast radius is larger than necessary
-- least privilege is the right operational target, even for a portfolio project
+So the cleaner fix was not "make a smaller token." The cleaner fix was:
 
-Why it was still acceptable temporarily:
+- remove `ghcr-pull-secret`
+- remove `GHCR_PULL_TOKEN` from the deployment requirements
+- simplify the deployment model
 
-- it unblocks the first real deployment
-- it avoids inventing fake automation that GitHub does not actually provide
-- it is easy to replace later with a dedicated `read:packages` token once the first deployment path is proven
+This is the better lesson for a junior engineer:
 
-This is a good example of a pragmatic engineering tradeoff:
+- least privilege matters
+- but removing a secret entirely is even better than shrinking it
+- the simplest secure design is often the one with fewer credentials
 
-- first get the pipeline working end to end
-- then tighten the credential scope once the deployment path is stable
+If the repo or package visibility becomes private later, a dedicated `read:packages` token should be added back at that time.
 
 ### Rate limiting as a late but necessary correction
 

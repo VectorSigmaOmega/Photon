@@ -115,7 +115,6 @@ jobs:
           API_IMAGE: ${{ steps.meta.outputs.api_image }}
           WORKER_IMAGE: ${{ steps.meta.outputs.worker_image }}
           MIGRATE_IMAGE: ${{ steps.meta.outputs.migrate_image }}
-          GHCR_PULL_TOKEN: ${{ secrets.GHCR_PULL_TOKEN }}
           GF_SECURITY_ADMIN_USER: ${{ secrets.GF_SECURITY_ADMIN_USER }}
           GF_SECURITY_ADMIN_PASSWORD: ${{ secrets.GF_SECURITY_ADMIN_PASSWORD }}
           MINIO_ROOT_USER: ${{ secrets.MINIO_ROOT_USER }}
@@ -132,8 +131,6 @@ jobs:
           tar -xzf /tmp/swiftbatch-deploy.tgz -C /home/deploy/swiftbatch
           cd /home/deploy/swiftbatch
           chmod +x scripts/deploy-k8s.sh
-          export GHCR_PULL_USERNAME=$(printf '%q' "$GITHUB_REPOSITORY_OWNER")
-          export GHCR_PULL_TOKEN=$(printf '%q' "$GHCR_PULL_TOKEN")
           export GF_SECURITY_ADMIN_USER=$(printf '%q' "$GF_SECURITY_ADMIN_USER")
           export GF_SECURITY_ADMIN_PASSWORD=$(printf '%q' "$GF_SECURITY_ADMIN_PASSWORD")
           export MINIO_ROOT_USER=$(printf '%q' "$MINIO_ROOT_USER")

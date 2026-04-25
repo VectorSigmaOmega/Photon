@@ -24,7 +24,6 @@ The deployment workflow does not keep Kubernetes secrets in the repo.
 Instead it:
 
 - pushes immutable image tags to `GHCR`
-- creates the `ghcr-pull-secret` pull secret on the cluster
 - creates the `swiftbatch-secrets` Kubernetes secret from GitHub repository secrets
 - applies the manifests
 - waits for deployment rollouts
@@ -56,9 +55,6 @@ Required secrets:
 
 - `SWIFTBATCH_DEPLOY_SSH_PRIVATE_KEY`
   - the private key that matches the server access path for `deploy`
-- `GHCR_PULL_TOKEN`
-  - token used by the cluster to pull private images from `ghcr.io`
-  - it should have at least `read:packages`
 - `GF_SECURITY_ADMIN_USER`
 - `GF_SECURITY_ADMIN_PASSWORD`
 - `MINIO_ROOT_USER`
@@ -71,10 +67,9 @@ Required secrets:
 
 The workflow pushes images to `GHCR` using GitHub Actions' built-in `GITHUB_TOKEN`.
 
-The cluster pull secret is separate. That is why `GHCR_PULL_TOKEN` is still needed:
+Because this repository and its published container images are public, the cluster pulls the images anonymously. That means no separate `GHCR_PULL_TOKEN` is required for the current deployment model.
 
-- Actions can push with `GITHUB_TOKEN`
-- the running cluster needs its own read credential to pull images later
+If the repo or packages are made private later, a cluster pull credential will need to be reintroduced.
 
 ## Server-Side Deploy Entry Point
 
