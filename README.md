@@ -79,6 +79,7 @@ Further reading:
 
 - [Build Journal](/home/dell/dev/Carousell/SwiftBatch/docs/build-journal.md)
 - [Backlog](/home/dell/dev/Carousell/SwiftBatch/docs/backlog.md)
+- [Agent Working Style](/home/dell/dev/Carousell/SwiftBatch/docs/agent-working-style.md)
 - [CI/CD Setup](/home/dell/dev/Carousell/SwiftBatch/docs/ci-cd.md)
 - [Deployment Strategy](/home/dell/dev/Carousell/SwiftBatch/docs/deployment-strategy.md)
 - [Server Operations](/home/dell/dev/Carousell/SwiftBatch/docs/server-operations.md)
