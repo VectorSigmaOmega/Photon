@@ -20,9 +20,21 @@ type Config struct {
 
 type HTTPServerConfig struct {
 	Addr            string
+	RateLimit       HTTPRateLimitConfig
 	ReadTimeout     time.Duration
 	WriteTimeout    time.Duration
 	ShutdownTimeout time.Duration
+}
+
+type HTTPRateLimitConfig struct {
+	Enabled                  bool
+	ClientTTL                time.Duration
+	PresignBurst             int
+	PresignRequestsPerMinute int
+	CreateBurst              int
+	CreateRequestsPerMinute  int
+	RetryBurst               int
+	RetryRequestsPerMinute   int
 }
 
 type WorkerConfig struct {
@@ -67,7 +79,17 @@ func Load(service string) (Config, error) {
 		AppName: fmt.Sprintf("swiftbatch-%s", service),
 		Env:     getEnv("SWIFTBATCH_ENV", "development"),
 		API: HTTPServerConfig{
-			Addr:            getEnv("SWIFTBATCH_API_ADDR", ":8080"),
+			Addr: getEnv("SWIFTBATCH_API_ADDR", ":8080"),
+			RateLimit: HTTPRateLimitConfig{
+				Enabled:                  getBool("SWIFTBATCH_API_RATE_LIMIT_ENABLED", true),
+				ClientTTL:                getDuration("SWIFTBATCH_API_RATE_LIMIT_CLIENT_TTL", 30*time.Minute),
+				PresignBurst:             getInt("SWIFTBATCH_API_PRESIGN_RATE_LIMIT_BURST", 5),
+				PresignRequestsPerMinute: getInt("SWIFTBATCH_API_PRESIGN_RATE_LIMIT_PER_MINUTE", 20),
+				CreateBurst:              getInt("SWIFTBATCH_API_JOBS_CREATE_RATE_LIMIT_BURST", 10),
+				CreateRequestsPerMinute:  getInt("SWIFTBATCH_API_JOBS_CREATE_RATE_LIMIT_PER_MINUTE", 30),
+				RetryBurst:               getInt("SWIFTBATCH_API_JOBS_RETRY_RATE_LIMIT_BURST", 2),
+				RetryRequestsPerMinute:   getInt("SWIFTBATCH_API_JOBS_RETRY_RATE_LIMIT_PER_MINUTE", 6),
+			},
 			ReadTimeout:     getDuration("SWIFTBATCH_API_READ_TIMEOUT", 10*time.Second),
 			WriteTimeout:    getDuration("SWIFTBATCH_API_WRITE_TIMEOUT", 15*time.Second),
 			ShutdownTimeout: getDuration("SWIFTBATCH_API_SHUTDOWN_TIMEOUT", 10*time.Second),
@@ -109,6 +131,10 @@ func Load(service string) (Config, error) {
 
 	if cfg.Worker.Concurrency <= 0 {
 		return Config{}, fmt.Errorf("SWIFTBATCH_WORKER_CONCURRENCY must be greater than zero")
+	}
+
+	if cfg.API.RateLimit.ClientTTL <= 0 {
+		return Config{}, fmt.Errorf("SWIFTBATCH_API_RATE_LIMIT_CLIENT_TTL must be greater than zero")
 	}
 
 	if strings.TrimSpace(cfg.Redis.QueueKey) == "" {

@@ -15,16 +15,28 @@ The manifests assume the default `local-path` storage class that ships with `k3s
 
 ## Image Strategy
 
-The app manifests reference local image names:
+The app manifests reference stable image names:
 
 - `swiftbatch-api:latest`
 - `swiftbatch-worker:latest`
 - `swiftbatch-migrate:latest`
 
-That keeps the YAML simple for the MVP. You can either:
+The intended deployment path is not "apply the repo as-is with committed secrets." Instead:
 
-1. build the images on the same Linux host that runs `k3s` and import them into `containerd`, or
-2. replace those image fields with registry-backed tags before applying
+- `scripts/deploy-k8s.sh` generates a temporary kustomization
+- that kustomization rewrites the three app images to registry-backed immutable tags
+- the script creates Kubernetes secrets from runtime environment variables
+- then the script applies the manifests and waits for rollout
+
+This keeps sensitive values out of the repo while preserving simple base YAML.
+
+You can still use the manifests manually if you want, but then you must:
+
+1. create `swiftbatch-secrets` yourself
+2. create `ghcr-pull-secret` yourself if images are private
+3. replace the app image names with real registry tags before applying
+
+If you prefer building directly on the cluster host, you can still:
 
 Example import flow on a host that has both Docker and `k3s`:
 
@@ -55,6 +67,27 @@ The repo is currently prewired for these hosts:
 If those change later, update both [config.yaml](/home/dell/dev/Carousell/SwiftBatch/deploy/k8s/config.yaml) and [ingress.yaml](/home/dell/dev/Carousell/SwiftBatch/deploy/k8s/ingress.yaml). Keep `SWIFTBATCH_STORAGE_PUBLIC_BASE_URL` aligned with the MinIO object ingress host.
 
 ## Deploy
+
+Recommended:
+
+```bash
+export GHCR_PULL_USERNAME=VectorSigmaOmega
+export GHCR_PULL_TOKEN=...
+export GF_SECURITY_ADMIN_USER=...
+export GF_SECURITY_ADMIN_PASSWORD=...
+export MINIO_ROOT_USER=...
+export MINIO_ROOT_PASSWORD=...
+export SWIFTBATCH_POSTGRES_PASSWORD=...
+export SWIFTBATCH_STORAGE_ACCESS_KEY=...
+export SWIFTBATCH_STORAGE_SECRET_KEY=...
+export SWIFTBATCH_API_IMAGE=ghcr.io/vectorsigmaomega/swiftbatch-api:<tag>
+export SWIFTBATCH_WORKER_IMAGE=ghcr.io/vectorsigmaomega/swiftbatch-worker:<tag>
+export SWIFTBATCH_MIGRATE_IMAGE=ghcr.io/vectorsigmaomega/swiftbatch-migrate:<tag>
+
+./scripts/deploy-k8s.sh
+```
+
+Manual fallback:
 
 ```bash
 kubectl apply -k deploy/k8s

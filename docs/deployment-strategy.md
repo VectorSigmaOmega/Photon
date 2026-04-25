@@ -20,6 +20,7 @@ The project will use:
 - GitHub Actions for CI/CD
 - one Linux VPS running `k3s`
 - Kubernetes manifests in `deploy/k8s`
+- SSH-triggered server-side deploy execution
 
 ## Why This Approach
 
@@ -58,6 +59,7 @@ The live VPS is a plain Linux server, not a managed cloud instance with extra co
 - use a dedicated SSH key
 - use `sudo` for privileged operations
 - let `k3s` provide the runtime and ingress layer
+- let GitHub Actions upload the repo snapshot and invoke `scripts/deploy-k8s.sh`
 
 Hardening details are documented separately in [Server Operations](/home/dell/dev/Carousell/SwiftBatch/docs/server-operations.md).
 

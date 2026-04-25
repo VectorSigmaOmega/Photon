@@ -406,6 +406,45 @@ The safer design was:
 
 That is still highly automated, but it avoids a timer causing downtime.
 
+### Problem 10: Public deployment readiness exposed missing rate limiting
+
+Right before the project moved into CI/CD and public deployment work, one operational gap stood out:
+
+- the API had timeouts
+- the API had metrics
+- but the expensive write paths did not have any rate limiting
+
+That matters because this system has endpoints that can create real backend work:
+
+- `POST /v1/uploads/presign`
+- `POST /v1/jobs`
+- `POST /v1/jobs/:id/retry`
+
+Without rate limiting, a single client could create unnecessary storage URLs, flood the queue, or repeatedly requeue failed work. For a demo system on a small VPS, that is exactly the sort of gap that turns into noisy operational problems.
+
+The fix was intentionally simple:
+
+- add an in-process IP-based limiter in the API layer
+- apply it only to the write-heavy routes
+- keep the read routes open for normal status/result polling
+- make the limits configurable through environment variables
+
+Another subtle part of this fix was client identification.
+
+Because traffic is expected to pass through Traefik in `k3s`, using only `RemoteAddr` would have been wrong or at least fragile. The limiter now prefers:
+
+- `X-Forwarded-For`
+- then `X-Real-IP`
+- then `RemoteAddr`
+
+This kept the first version practical without needing Redis-backed distributed rate limiting.
+
+Lesson:
+
+- public deployment readiness is not just "can it run in Kubernetes?"
+- it is also "have the obvious abuse paths been bounded?"
+- simple local controls are often the right first move before introducing more infrastructure
+
 ## 6. Why the Project Was Built Incrementally
 
 One pattern appears throughout the whole project: do not build the fanciest version first.
@@ -635,3 +674,76 @@ The active DNS management shown during setup is the `Lightsail` DNS zone for `ab
 - update the current DNS zone in the AWS Lightsail DNS UI
 
 This is a good reminder that infrastructure plans drift, and the docs need to drift with them.
+
+### The GitHub Container Registry credential tradeoff
+
+When the first CI/CD deployment was wired, the cluster needed a credential to pull private images from `ghcr.io`.
+
+There are two separate GitHub authentication paths involved:
+
+- the GitHub Actions workflow pushing images
+- the running Kubernetes cluster pulling those images later
+
+The workflow can push with GitHub Actions' built-in `GITHUB_TOKEN`, but the cluster cannot use that ephemeral workflow token after the job is over. It needs a long-lived credential stored as a Kubernetes image pull secret.
+
+The clean long-term solution is:
+
+- create a dedicated GitHub token with only `read:packages`
+- store that in the repo as `GHCR_PULL_TOKEN`
+- let the cluster use that least-privilege credential
+
+During the bootstrap step, that token did not yet exist, and GitHub's CLI cannot create a classic PAT directly.
+
+So the temporary choice was:
+
+- reuse the already-authenticated local GitHub token
+- store it as `GHCR_PULL_TOKEN`
+- accept that it is broader than ideal for the first deployment
+
+Why that is not ideal:
+
+- the current token has many scopes beyond package read access
+- if that token leaks from GitHub secrets or from the cluster pull secret, the blast radius is larger than necessary
+- least privilege is the right operational target, even for a portfolio project
+
+Why it was still acceptable temporarily:
+
+- it unblocks the first real deployment
+- it avoids inventing fake automation that GitHub does not actually provide
+- it is easy to replace later with a dedicated `read:packages` token once the first deployment path is proven
+
+This is a good example of a pragmatic engineering tradeoff:
+
+- first get the pipeline working end to end
+- then tighten the credential scope once the deployment path is stable
+
+### Rate limiting as a late but necessary correction
+
+One operational gap surfaced near the end of the backend build:
+
+- the API had timeouts
+- the API had metrics
+- but it did not have request rate limiting
+
+That mattered because the most expensive public endpoints are:
+
+- `POST /v1/uploads/presign`
+- `POST /v1/jobs`
+- `POST /v1/jobs/{id}/retry`
+
+Without a limiter, a simple burst or abuse pattern could force unnecessary object writes, queue growth, retries, and worker load.
+
+The fix was intentionally small and targeted:
+
+- add an in-memory, IP-based limiter in the API server
+- make it proxy-aware by checking `X-Forwarded-For`, then `X-Real-IP`, then `RemoteAddr`
+- apply it only to the write-heavy endpoints
+- return `429` when limits are exceeded
+
+The first configured defaults were:
+
+- presign: `20/min` with burst `5`
+- job create: `30/min` with burst `10`
+- retry: `6/min` with burst `2`
+
+This was not meant to be a perfect distributed rate-limiting system. It was meant to close a real operational hole with the smallest implementation that matches the current architecture.

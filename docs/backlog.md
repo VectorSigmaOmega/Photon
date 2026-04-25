@@ -18,10 +18,11 @@ Completed:
 - metrics and structured logging
 - Docker images
 - single-node `k3s` manifests
+- GitHub Actions CI/CD scaffolding
 
 In progress next:
 
-- GitHub Actions CI/CD
+- first live CI/CD deployment run
 
 Remaining after that:
 
@@ -29,6 +30,11 @@ Remaining after that:
 - architecture diagram
 - demo instructions
 - ephemeral data cleanup automation
+
+Footnote:
+
+- the user-facing frontend has not been built yet
+- for portfolio value, the eventual frontend should include a clean product flow plus a visible `Engineering` or `How It's Built` entry point that surfaces the system design without turning the homepage into a wall of infrastructure details
 
 ## Current Delivery Plan
 
@@ -73,7 +79,7 @@ That means future cleanup work should explicitly delete:
 
 ## Next Phase Scope: CI/CD
 
-The CI/CD phase should deliver:
+The CI/CD scaffolding now delivers:
 
 - GitHub repo workflow for `go build` and basic validation
 - Docker image build and push for:
@@ -84,6 +90,11 @@ The CI/CD phase should deliver:
 - deployment steps that are reusable for both:
   - temporary AWS server
   - later SkyServer server
+
+What still remains operationally is:
+
+- configure GitHub repository variables and secrets
+- run the first deployment from GitHub Actions against the SkyServer VPS
 
 ## Non-Goals For The Next Phase
 

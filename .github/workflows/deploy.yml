@@ -1,0 +1,154 @@
+name: Deploy
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: swiftbatch-deploy-main
+  cancel-in-progress: true
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    env:
+      DEPLOY_HOST: ${{ vars.SWIFTBATCH_DEPLOY_HOST }}
+      DEPLOY_PORT: ${{ vars.SWIFTBATCH_DEPLOY_PORT || '22' }}
+      DEPLOY_USER: ${{ vars.SWIFTBATCH_DEPLOY_USER || 'deploy' }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate deploy target configuration
+        shell: bash
+        run: |
+          test -n "$DEPLOY_HOST"
+          test -n "$DEPLOY_USER"
+          test -n "$DEPLOY_PORT"
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Run tests
+        run: go test ./...
+
+      - name: Compute image metadata
+        id: meta
+        shell: bash
+        run: |
+          owner_lower="${GITHUB_REPOSITORY_OWNER,,}"
+          echo "owner_lower=$owner_lower" >> "$GITHUB_OUTPUT"
+          echo "api_image=ghcr.io/$owner_lower/swiftbatch-api:${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
+          echo "worker_image=ghcr.io/$owner_lower/swiftbatch-worker:${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
+          echo "migrate_image=ghcr.io/$owner_lower/swiftbatch-migrate:${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push API image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: deploy/docker/Dockerfile.api
+          push: true
+          tags: |
+            ${{ steps.meta.outputs.api_image }}
+            ghcr.io/${{ steps.meta.outputs.owner_lower }}/swiftbatch-api:latest
+
+      - name: Build and push worker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: deploy/docker/Dockerfile.worker
+          push: true
+          tags: |
+            ${{ steps.meta.outputs.worker_image }}
+            ghcr.io/${{ steps.meta.outputs.owner_lower }}/swiftbatch-worker:latest
+
+      - name: Build and push migrate image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: deploy/docker/Dockerfile.migrate
+          push: true
+          tags: |
+            ${{ steps.meta.outputs.migrate_image }}
+            ghcr.io/${{ steps.meta.outputs.owner_lower }}/swiftbatch-migrate:latest
+
+      - name: Prepare SSH key
+        shell: bash
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' '${{ secrets.SWIFTBATCH_DEPLOY_SSH_PRIVATE_KEY }}' > ~/.ssh/swiftbatch_deploy_key
+          chmod 600 ~/.ssh/swiftbatch_deploy_key
+          ssh-keyscan -p "$DEPLOY_PORT" -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts
+
+      - name: Upload deployment bundle
+        shell: bash
+        run: |
+          tar \
+            --exclude=.git \
+            --exclude=.github \
+            -czf /tmp/swiftbatch-deploy.tgz \
+            .
+          scp -P "$DEPLOY_PORT" -i ~/.ssh/swiftbatch_deploy_key /tmp/swiftbatch-deploy.tgz \
+            "$DEPLOY_USER@$DEPLOY_HOST:/tmp/swiftbatch-deploy.tgz"
+
+      - name: Deploy to k3s
+        shell: bash
+        env:
+          API_IMAGE: ${{ steps.meta.outputs.api_image }}
+          WORKER_IMAGE: ${{ steps.meta.outputs.worker_image }}
+          MIGRATE_IMAGE: ${{ steps.meta.outputs.migrate_image }}
+          GHCR_PULL_TOKEN: ${{ secrets.GHCR_PULL_TOKEN }}
+          GF_SECURITY_ADMIN_USER: ${{ secrets.GF_SECURITY_ADMIN_USER }}
+          GF_SECURITY_ADMIN_PASSWORD: ${{ secrets.GF_SECURITY_ADMIN_PASSWORD }}
+          MINIO_ROOT_USER: ${{ secrets.MINIO_ROOT_USER }}
+          MINIO_ROOT_PASSWORD: ${{ secrets.MINIO_ROOT_PASSWORD }}
+          SWIFTBATCH_POSTGRES_PASSWORD: ${{ secrets.SWIFTBATCH_POSTGRES_PASSWORD }}
+          SWIFTBATCH_STORAGE_ACCESS_KEY: ${{ secrets.SWIFTBATCH_STORAGE_ACCESS_KEY }}
+          SWIFTBATCH_STORAGE_SECRET_KEY: ${{ secrets.SWIFTBATCH_STORAGE_SECRET_KEY }}
+        run: |
+          cat > /tmp/swiftbatch-remote-deploy.sh <<EOF
+          #!/usr/bin/env bash
+          set -euo pipefail
+          rm -rf /home/deploy/swiftbatch
+          mkdir -p /home/deploy/swiftbatch
+          tar -xzf /tmp/swiftbatch-deploy.tgz -C /home/deploy/swiftbatch
+          cd /home/deploy/swiftbatch
+          chmod +x scripts/deploy-k8s.sh
+          export GHCR_PULL_USERNAME=$(printf '%q' "$GITHUB_REPOSITORY_OWNER")
+          export GHCR_PULL_TOKEN=$(printf '%q' "$GHCR_PULL_TOKEN")
+          export GF_SECURITY_ADMIN_USER=$(printf '%q' "$GF_SECURITY_ADMIN_USER")
+          export GF_SECURITY_ADMIN_PASSWORD=$(printf '%q' "$GF_SECURITY_ADMIN_PASSWORD")
+          export MINIO_ROOT_USER=$(printf '%q' "$MINIO_ROOT_USER")
+          export MINIO_ROOT_PASSWORD=$(printf '%q' "$MINIO_ROOT_PASSWORD")
+          export SWIFTBATCH_POSTGRES_PASSWORD=$(printf '%q' "$SWIFTBATCH_POSTGRES_PASSWORD")
+          export SWIFTBATCH_STORAGE_ACCESS_KEY=$(printf '%q' "$SWIFTBATCH_STORAGE_ACCESS_KEY")
+          export SWIFTBATCH_STORAGE_SECRET_KEY=$(printf '%q' "$SWIFTBATCH_STORAGE_SECRET_KEY")
+          export SWIFTBATCH_API_IMAGE=$(printf '%q' "$API_IMAGE")
+          export SWIFTBATCH_WORKER_IMAGE=$(printf '%q' "$WORKER_IMAGE")
+          export SWIFTBATCH_MIGRATE_IMAGE=$(printf '%q' "$MIGRATE_IMAGE")
+          ./scripts/deploy-k8s.sh
+          EOF
+
+          scp -P "$DEPLOY_PORT" -i ~/.ssh/swiftbatch_deploy_key /tmp/swiftbatch-remote-deploy.sh \
+            "$DEPLOY_USER@$DEPLOY_HOST:/tmp/swiftbatch-remote-deploy.sh"
+
+          ssh -p "$DEPLOY_PORT" -i ~/.ssh/swiftbatch_deploy_key "$DEPLOY_USER@$DEPLOY_HOST" \
+            'bash /tmp/swiftbatch-remote-deploy.sh'

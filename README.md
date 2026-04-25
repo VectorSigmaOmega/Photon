@@ -63,6 +63,7 @@ go run ./cmd/worker
 - `GET /v1/jobs/:id/results` now returns output metadata plus presigned download URLs
 - worker metrics now include queue depth, DLQ depth, job completion/failure counts, retry counts, processing duration, and concurrency usage
 - structured JSON logs now include `job_id` on create, retry, processing, completion, and DLQ paths
+- IP-based rate limiting now protects `POST /v1/uploads/presign`, `POST /v1/jobs`, and `POST /v1/jobs/:id/retry`
 - Postgres migration flow is wired through `cmd/migrate`
 - Docker Compose includes `api`, `worker`, `redis`, `postgres`, `minio`, and a one-shot `createbuckets` init container
 - `deploy/k8s/` now contains single-node `k3s` manifests for the full demo stack, including Traefik ingresses plus Prometheus and Grafana
@@ -75,6 +76,7 @@ Further reading:
 
 - [Build Journal](/home/dell/dev/Carousell/SwiftBatch/docs/build-journal.md)
 - [Backlog](/home/dell/dev/Carousell/SwiftBatch/docs/backlog.md)
+- [CI/CD Setup](/home/dell/dev/Carousell/SwiftBatch/docs/ci-cd.md)
 - [Deployment Strategy](/home/dell/dev/Carousell/SwiftBatch/docs/deployment-strategy.md)
 - [Server Operations](/home/dell/dev/Carousell/SwiftBatch/docs/server-operations.md)
 
@@ -82,11 +84,12 @@ Implementation notes:
 
 - the worker image uses Debian slim plus ImageMagick so `jpg`, `png`, `webp`, and `avif` output support is available with a small amount of code
 - presigned URLs are generated against `SWIFTBATCH_STORAGE_PUBLIC_BASE_URL`, which defaults to `http://localhost:9000` for local Docker verification
+- API rate limiting prefers `X-Forwarded-For`, then `X-Real-IP`, then `RemoteAddr`, so it still works sensibly behind Traefik
 - the product is now being treated as an ephemeral-data demo system, so future cleanup of old uploads, outputs, and job history is part of the planned scope
 
 Next implementation steps:
 
-- add GitHub Actions CI/CD wiring
+- configure GitHub Actions secrets/variables and run the first deploy
 - add ephemeral data cleanup automation
 - add demo-oriented docs and sample curl flow
 

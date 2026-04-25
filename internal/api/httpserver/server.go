@@ -52,6 +52,8 @@ func New(
 		uploadPresignTTL:   storageCfg.UploadPresignTTL,
 	}
 
+	rateLimiter := newRateLimiter(log, cfg.RateLimit)
+
 	mux := http.NewServeMux()
 	mux.Handle("GET /healthz", metrics.Instrument("healthz", http.HandlerFunc(s.handleHealthz)))
 	mux.Handle("GET /readyz", metrics.Instrument("readyz", http.HandlerFunc(s.handleReadyz)))
@@ -59,12 +61,42 @@ func New(
 
 	mux.Handle(
 		"POST /v1/uploads/presign",
-		metrics.Instrument("uploads_presign", http.HandlerFunc(s.handlePresignUpload)),
+		metrics.Instrument(
+			"uploads_presign",
+			rateLimiter.wrap(
+				"uploads_presign",
+				cfg.RateLimit.PresignRequestsPerMinute,
+				cfg.RateLimit.PresignBurst,
+				http.HandlerFunc(s.handlePresignUpload),
+			),
+		),
 	)
-	mux.Handle("POST /v1/jobs", metrics.Instrument("jobs_create", http.HandlerFunc(s.handleCreateJob)))
+	mux.Handle(
+		"POST /v1/jobs",
+		metrics.Instrument(
+			"jobs_create",
+			rateLimiter.wrap(
+				"jobs_create",
+				cfg.RateLimit.CreateRequestsPerMinute,
+				cfg.RateLimit.CreateBurst,
+				http.HandlerFunc(s.handleCreateJob),
+			),
+		),
+	)
+	mux.Handle(
+		"POST /v1/jobs/{id}/retry",
+		metrics.Instrument(
+			"jobs_retry",
+			rateLimiter.wrap(
+				"jobs_retry",
+				cfg.RateLimit.RetryRequestsPerMinute,
+				cfg.RateLimit.RetryBurst,
+				http.HandlerFunc(s.handleRetryJob),
+			),
+		),
+	)
 	mux.Handle("GET /v1/jobs/{id}", metrics.Instrument("jobs_get", http.HandlerFunc(s.handleGetJob)))
 	mux.Handle("GET /v1/jobs/{id}/results", metrics.Instrument("jobs_results", http.HandlerFunc(s.handleGetResults)))
-	mux.Handle("POST /v1/jobs/{id}/retry", metrics.Instrument("jobs_retry", http.HandlerFunc(s.handleRetryJob)))
 
 	s.server = &http.Server{
 		Addr:              cfg.Addr,
