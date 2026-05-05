@@ -1,12 +1,12 @@
-# SwiftBatch Build Journal
+# Photon Build Journal
 
-This document is a reconstructed engineering journal for the SwiftBatch build-out. It is intended for a junior developer who wants to understand not just what was built, but why certain choices were made and how problems were debugged.
+This document is a reconstructed engineering journal for the Photon build-out. It is intended for a junior developer who wants to understand not just what was built, but why certain choices were made and how problems were debugged.
 
 It is not a verbatim terminal transcript. The original session was long and part of it was compacted, so this journal is based on the retained work summary, the current repo state, and the implementation decisions captured in the code.
 
 ## 1. Starting Point
 
-The project did not begin as a working application. It began with a brief: [SWIFTBATCH_AGENT_BRIEF.md](/home/dell/dev/Carousell/SwiftBatch/SWIFTBATCH_AGENT_BRIEF.md).
+The project did not begin as a working application. It began with a project brief that set the scope and constraints.
 
 That brief mattered because it set the real constraints:
 
@@ -585,7 +585,7 @@ The following changes were made on the SkyServer VPS:
   - `22/tcp`
   - `80/tcp`
   - `443/tcp`
-- changed the hostname to `node1.swiftbatch.abhinash.dev`
+- changed the hostname to `node1.photon.abhinash.dev`
 - disabled `PermitRootLogin`
 - disabled `PasswordAuthentication`
 - kept `PubkeyAuthentication` enabled
@@ -690,7 +690,7 @@ The workflow can push with GitHub Actions' built-in `GITHUB_TOKEN`, but the clus
 
 The first bootstrap temporarily used a broad GitHub token as `GHCR_PULL_TOKEN` because that was the normal pattern and it unblocked the first live deployment.
 
-After the deployment succeeded, the actual package visibility was checked and all published SwiftBatch container images were confirmed to be `public`.
+After the deployment succeeded, the actual package visibility was checked and all published Photon container images were confirmed to be `public`.
 
 That changed the right answer.
 
@@ -776,7 +776,7 @@ One subtle failure happened during the manual TLS rollout:
 
 The fix was simple once the pod description made the problem obvious:
 
-- restore the API deployment image to `ghcr.io/vectorsigmaomega/swiftbatch-api:latest`
+- restore the API deployment image to `ghcr.io/vectorsigmaomega/photon-api:latest`
 
 The important lesson is not "never make mistakes during ops work." The lesson is:
 
@@ -835,3 +835,65 @@ So the implementation was corrected to use MinIO's global CORS setting instead:
 That kept the browser upload flow working without turning deployment into a repeated init-container failure.
 
 This is a good example of the kind of problem that only appears when a system stops being "backend tested" and starts being "browser tested."
+
+### The "batch" mismatch was fixed without destabilizing the backend
+
+Once the first frontend was working, one product mismatch became obvious:
+
+- the project is called `Photon`
+- but the browser UI only accepted one source file at a time
+
+There were two possible fixes:
+
+1. redesign the backend around a true parent-batch / child-job model
+2. keep the current single-job schema and let the frontend fan out one multi-file submit into multiple normal jobs
+
+The second option was chosen on purpose.
+
+Why:
+
+- it closes the visible product gap
+- it keeps Redis, Postgres, MinIO, and worker behavior stable
+- it avoids a schema redesign late in the project
+- it is easier to explain in an interview as an incremental design decision
+
+So the browser flow changed to:
+
+- allow selecting multiple files
+- request one presigned upload URL per file
+- upload each file directly to storage
+- create one normal job per file
+- poll all resulting jobs together as a single batch run in the UI
+
+This is a good example of choosing the smallest change that solves the real problem.
+
+### Ephemeral data cleanup turned the retention policy into real behavior
+
+Earlier planning had already decided that Photon should behave like an ephemeral demo system:
+
+- anonymous users
+- no long-term account state
+- no need to preserve old uploads forever
+
+That policy only becomes real once the system actually deletes old data.
+
+The implemented solution was a dedicated cleanup process rather than bolting cleanup logic into the API or worker.
+
+The cleanup runner now:
+
+- scans for terminal jobs older than the retention window
+- deletes uploaded source objects from MinIO
+- deletes generated output objects from MinIO
+- deletes the matching database rows, which also removes attempts and outputs through cascades
+- prunes stale DLQ entries from Redis
+
+This was the right implementation shape for a few reasons:
+
+- cleanup has its own operational concern and should not depend on incoming API traffic
+- the worker already has enough responsibility
+- a separate process is easy to run in both Docker Compose and `k3s`
+
+The broader lesson is:
+
+- a retention policy in documentation is not enough
+- operational assumptions should eventually become executable behavior

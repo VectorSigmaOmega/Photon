@@ -1,11 +1,11 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: swiftbatch-api
-  namespace: swiftbatch
+  name: photon-api
+  namespace: photon
 spec:
   selector:
-    app: swiftbatch-api
+    app: photon-api
   ports:
     - name: http
       port: 8080
@@ -14,84 +14,84 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: swiftbatch-api
-  namespace: swiftbatch
+  name: photon-api
+  namespace: photon
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: swiftbatch-api
+      app: photon-api
   template:
     metadata:
       labels:
-        app: swiftbatch-api
+        app: photon-api
     spec:
       initContainers:
         - name: wait-postgres
           image: postgres:16-alpine
           envFrom:
             - configMapRef:
-                name: swiftbatch-config
+                name: photon-config
             - secretRef:
-                name: swiftbatch-secrets
+                name: photon-secrets
           env:
             - name: PGPASSWORD
               valueFrom:
                 secretKeyRef:
-                  key: SWIFTBATCH_POSTGRES_PASSWORD
-                  name: swiftbatch-secrets
+                  key: PHOTON_POSTGRES_PASSWORD
+                  name: photon-secrets
           command:
             - sh
             - -c
             - |
               until pg_isready \
-                -h "$SWIFTBATCH_POSTGRES_HOST" \
-                -p "$SWIFTBATCH_POSTGRES_PORT" \
-                -U "$SWIFTBATCH_POSTGRES_USER" \
-                -d "$SWIFTBATCH_POSTGRES_DB"; do
+                -h "$PHOTON_POSTGRES_HOST" \
+                -p "$PHOTON_POSTGRES_PORT" \
+                -U "$PHOTON_POSTGRES_USER" \
+                -d "$PHOTON_POSTGRES_DB"; do
                 sleep 2
               done
         - name: migrate
-          image: swiftbatch-migrate:latest
+          image: photon-migrate:latest
           imagePullPolicy: IfNotPresent
           envFrom:
             - configMapRef:
-                name: swiftbatch-config
+                name: photon-config
             - secretRef:
-                name: swiftbatch-secrets
+                name: photon-secrets
         - name: wait-redis
           image: redis:7-alpine
           command:
             - sh
             - -c
             - |
-              until redis-cli -h swiftbatch-redis ping; do
+              until redis-cli -h photon-redis ping; do
                 sleep 2
               done
         - name: ensure-bucket
           image: minio/mc:latest
           envFrom:
             - configMapRef:
-                name: swiftbatch-config
+                name: photon-config
             - secretRef:
-                name: swiftbatch-secrets
+                name: photon-secrets
           command:
             - sh
             - -c
             - |
-              until mc alias set local http://swiftbatch-minio:9000 "$SWIFTBATCH_STORAGE_ACCESS_KEY" "$SWIFTBATCH_STORAGE_SECRET_KEY" >/dev/null 2>&1; do
+              until mc alias set local http://photon-minio:9000 "$PHOTON_STORAGE_ACCESS_KEY" "$PHOTON_STORAGE_SECRET_KEY" >/dev/null 2>&1; do
                 sleep 2
               done
-              mc mb --ignore-existing "local/$SWIFTBATCH_STORAGE_BUCKET" >/dev/null
+              mc mb --ignore-existing "local/$PHOTON_STORAGE_BUCKET" >/dev/null
       containers:
         - name: api
-          image: swiftbatch-api:latest
+          image: photon-api:latest
           imagePullPolicy: IfNotPresent
           envFrom:
             - configMapRef:
-                name: swiftbatch-config
+                name: photon-config
             - secretRef:
-                name: swiftbatch-secrets
+                name: photon-secrets
           ports:
             - containerPort: 8080
               name: http
@@ -111,11 +111,11 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: swiftbatch-worker
-  namespace: swiftbatch
+  name: photon-worker
+  namespace: photon
 spec:
   selector:
-    app: swiftbatch-worker
+    app: photon-worker
   ports:
     - name: metrics
       port: 8081
@@ -124,42 +124,42 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: swiftbatch-worker
-  namespace: swiftbatch
+  name: photon-worker
+  namespace: photon
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: swiftbatch-worker
+      app: photon-worker
   template:
     metadata:
       labels:
-        app: swiftbatch-worker
+        app: photon-worker
     spec:
       initContainers:
         - name: wait-postgres-schema
           image: postgres:16-alpine
           envFrom:
             - configMapRef:
-                name: swiftbatch-config
+                name: photon-config
             - secretRef:
-                name: swiftbatch-secrets
+                name: photon-secrets
           env:
             - name: PGPASSWORD
               valueFrom:
                 secretKeyRef:
-                  key: SWIFTBATCH_POSTGRES_PASSWORD
-                  name: swiftbatch-secrets
+                  key: PHOTON_POSTGRES_PASSWORD
+                  name: photon-secrets
           command:
             - sh
             - -c
             - |
               until [ "$(
                 psql \
-                  -h "$SWIFTBATCH_POSTGRES_HOST" \
-                  -p "$SWIFTBATCH_POSTGRES_PORT" \
-                  -U "$SWIFTBATCH_POSTGRES_USER" \
-                  -d "$SWIFTBATCH_POSTGRES_DB" \
+                  -h "$PHOTON_POSTGRES_HOST" \
+                  -p "$PHOTON_POSTGRES_PORT" \
+                  -U "$PHOTON_POSTGRES_USER" \
+                  -d "$PHOTON_POSTGRES_DB" \
                   -tAc "SELECT CASE WHEN to_regclass('public.jobs') IS NOT NULL THEN 1 ELSE 0 END"
               )" = "1" ]; do
                 sleep 2
@@ -170,33 +170,33 @@ spec:
             - sh
             - -c
             - |
-              until redis-cli -h swiftbatch-redis ping; do
+              until redis-cli -h photon-redis ping; do
                 sleep 2
               done
         - name: ensure-bucket
           image: minio/mc:latest
           envFrom:
             - configMapRef:
-                name: swiftbatch-config
+                name: photon-config
             - secretRef:
-                name: swiftbatch-secrets
+                name: photon-secrets
           command:
             - sh
             - -c
             - |
-              until mc alias set local http://swiftbatch-minio:9000 "$SWIFTBATCH_STORAGE_ACCESS_KEY" "$SWIFTBATCH_STORAGE_SECRET_KEY" >/dev/null 2>&1; do
+              until mc alias set local http://photon-minio:9000 "$PHOTON_STORAGE_ACCESS_KEY" "$PHOTON_STORAGE_SECRET_KEY" >/dev/null 2>&1; do
                 sleep 2
               done
-              mc mb --ignore-existing "local/$SWIFTBATCH_STORAGE_BUCKET" >/dev/null
+              mc mb --ignore-existing "local/$PHOTON_STORAGE_BUCKET" >/dev/null
       containers:
         - name: worker
-          image: swiftbatch-worker:latest
+          image: photon-worker:latest
           imagePullPolicy: IfNotPresent
           envFrom:
             - configMapRef:
-                name: swiftbatch-config
+                name: photon-config
             - secretRef:
-                name: swiftbatch-secrets
+                name: photon-secrets
           ports:
             - containerPort: 8081
               name: metrics
@@ -212,3 +212,80 @@ spec:
               port: metrics
             initialDelaySeconds: 20
             periodSeconds: 10
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: photon-cleanup
+  namespace: photon
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: photon-cleanup
+  template:
+    metadata:
+      labels:
+        app: photon-cleanup
+    spec:
+      initContainers:
+        - name: wait-postgres-schema
+          image: postgres:16-alpine
+          envFrom:
+            - configMapRef:
+                name: photon-config
+            - secretRef:
+                name: photon-secrets
+          env:
+            - name: PGPASSWORD
+              valueFrom:
+                secretKeyRef:
+                  key: PHOTON_POSTGRES_PASSWORD
+                  name: photon-secrets
+          command:
+            - sh
+            - -c
+            - |
+              until [ "$(
+                psql \
+                  -h "$PHOTON_POSTGRES_HOST" \
+                  -p "$PHOTON_POSTGRES_PORT" \
+                  -U "$PHOTON_POSTGRES_USER" \
+                  -d "$PHOTON_POSTGRES_DB" \
+                  -tAc "SELECT CASE WHEN to_regclass('public.jobs') IS NOT NULL THEN 1 ELSE 0 END"
+              )" = "1" ]; do
+                sleep 2
+              done
+        - name: wait-redis
+          image: redis:7-alpine
+          command:
+            - sh
+            - -c
+            - |
+              until redis-cli -h photon-redis ping; do
+                sleep 2
+              done
+        - name: ensure-bucket
+          image: minio/mc:latest
+          envFrom:
+            - configMapRef:
+                name: photon-config
+            - secretRef:
+                name: photon-secrets
+          command:
+            - sh
+            - -c
+            - |
+              until mc alias set local http://photon-minio:9000 "$PHOTON_STORAGE_ACCESS_KEY" "$PHOTON_STORAGE_SECRET_KEY" >/dev/null 2>&1; do
+                sleep 2
+              done
+              mc mb --ignore-existing "local/$PHOTON_STORAGE_BUCKET" >/dev/null
+      containers:
+        - name: cleanup
+          image: photon-cleanup:latest
+          imagePullPolicy: IfNotPresent
+          envFrom:
+            - configMapRef:
+                name: photon-config
+            - secretRef:
+                name: photon-secrets

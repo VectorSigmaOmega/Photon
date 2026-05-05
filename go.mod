@@ -1,4 +1,4 @@
-module github.com/carousell/swiftbatch
+module github.com/VectorSigmaOmega/photon
 
 go 1.25.0
 

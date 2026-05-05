@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/carousell/swiftbatch/internal/config"
-	"github.com/carousell/swiftbatch/internal/platform/app"
-	"github.com/carousell/swiftbatch/internal/platform/migrations"
-	"github.com/carousell/swiftbatch/internal/platform/postgres"
+	"github.com/VectorSigmaOmega/photon/internal/config"
+	"github.com/VectorSigmaOmega/photon/internal/platform/app"
+	"github.com/VectorSigmaOmega/photon/internal/platform/migrations"
+	"github.com/VectorSigmaOmega/photon/internal/platform/postgres"
 )
 
 func main() {

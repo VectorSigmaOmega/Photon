@@ -1,6 +1,6 @@
 # Server Operations
 
-This document records the current manual access and hardening state of the live SwiftBatch VPS so future deployment work does not rely on memory.
+This document records the current manual access and hardening state of the live Photon VPS so future deployment work does not rely on memory.
 
 ## Current Server
 
@@ -13,12 +13,14 @@ This document records the current manual access and hardening state of the live 
 
 The public hostnames for this project are currently managed in the `AWS Lightsail` DNS zone UI for `abhinash.dev`, not in Route 53.
 
-The current public names are:
+The current public names are still the legacy live deployment names:
 
 - `swiftbatch.abhinash.dev`
 - `storage.swiftbatch.abhinash.dev`
 - `minio.swiftbatch.abhinash.dev`
 - `grafana.swiftbatch.abhinash.dev`
+
+The product has since been renamed to `Photon`, but DNS names and SSH aliases have not been migrated yet.
 
 If a future note says "update DNS", it means:
 

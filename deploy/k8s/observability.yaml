@@ -1,8 +1,8 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: swiftbatch-prometheus-config
-  namespace: swiftbatch
+  name: photon-prometheus-config
+  namespace: photon
 data:
   prometheus.yml: |
     global:
@@ -14,21 +14,21 @@ data:
           - targets:
               - 127.0.0.1:9090
 
-      - job_name: swiftbatch-api
+      - job_name: photon-api
         static_configs:
           - targets:
-              - swiftbatch-api:8080
+              - photon-api:8080
 
-      - job_name: swiftbatch-worker
+      - job_name: photon-worker
         static_configs:
           - targets:
-              - swiftbatch-worker:8081
+              - photon-worker:8081
 ---
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: swiftbatch-grafana-datasources
-  namespace: swiftbatch
+  name: photon-grafana-datasources
+  namespace: photon
 data:
   datasources.yaml: |
     apiVersion: 1
@@ -36,17 +36,17 @@ data:
       - name: Prometheus
         type: prometheus
         access: proxy
-        url: http://swiftbatch-prometheus:9090
+        url: http://photon-prometheus:9090
         isDefault: true
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: swiftbatch-prometheus
-  namespace: swiftbatch
+  name: photon-prometheus
+  namespace: photon
 spec:
   selector:
-    app: swiftbatch-prometheus
+    app: photon-prometheus
   ports:
     - name: http
       port: 9090
@@ -55,17 +55,17 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: swiftbatch-prometheus
-  namespace: swiftbatch
+  name: photon-prometheus
+  namespace: photon
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: swiftbatch-prometheus
+      app: photon-prometheus
   template:
     metadata:
       labels:
-        app: swiftbatch-prometheus
+        app: photon-prometheus
     spec:
       securityContext:
         fsGroup: 65534
@@ -100,18 +100,18 @@ spec:
       volumes:
         - name: config
           configMap:
-            name: swiftbatch-prometheus-config
+            name: photon-prometheus-config
         - name: data
           emptyDir: {}
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: swiftbatch-grafana
-  namespace: swiftbatch
+  name: photon-grafana
+  namespace: photon
 spec:
   selector:
-    app: swiftbatch-grafana
+    app: photon-grafana
   ports:
     - name: http
       port: 3000
@@ -120,17 +120,17 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: swiftbatch-grafana
-  namespace: swiftbatch
+  name: photon-grafana
+  namespace: photon
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: swiftbatch-grafana
+      app: photon-grafana
   template:
     metadata:
       labels:
-        app: swiftbatch-grafana
+        app: photon-grafana
     spec:
       securityContext:
         fsGroup: 472
@@ -142,17 +142,17 @@ spec:
               valueFrom:
                 secretKeyRef:
                   key: GF_SECURITY_ADMIN_PASSWORD
-                  name: swiftbatch-secrets
+                  name: photon-secrets
             - name: GF_SECURITY_ADMIN_USER
               valueFrom:
                 secretKeyRef:
                   key: GF_SECURITY_ADMIN_USER
-                  name: swiftbatch-secrets
+                  name: photon-secrets
             - name: GF_SERVER_ROOT_URL
               valueFrom:
                 configMapKeyRef:
                   key: GF_SERVER_ROOT_URL
-                  name: swiftbatch-config
+                  name: photon-config
           ports:
             - containerPort: 3000
               name: http
@@ -177,6 +177,6 @@ spec:
       volumes:
         - name: datasources
           configMap:
-            name: swiftbatch-grafana-datasources
+            name: photon-grafana-datasources
         - name: data
           emptyDir: {}

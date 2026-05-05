@@ -2,6 +2,7 @@ package storage
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/url"
 	"os"
@@ -10,7 +11,7 @@ import (
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
 
-	"github.com/carousell/swiftbatch/internal/config"
+	"github.com/VectorSigmaOmega/photon/internal/config"
 )
 
 type StoredObject struct {
@@ -117,4 +118,18 @@ func (c *MinIOClient) PresignDownloadURL(ctx context.Context, objectKey string, 
 	}
 
 	return presignedURL.String(), nil
+}
+
+func (c *MinIOClient) DeleteObject(ctx context.Context, objectKey string) error {
+	err := c.client.RemoveObject(ctx, c.bucket, objectKey, minio.RemoveObjectOptions{})
+	if err == nil || errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+		return err
+	}
+
+	response := minio.ToErrorResponse(err)
+	if response.Code == "NoSuchKey" || response.Code == "NoSuchObject" {
+		return nil
+	}
+
+	return err
 }

@@ -1,4 +1,4 @@
-# SwiftBatch Backlog
+# Photon Backlog
 
 This file tracks the remaining work for the MVP and the agreed delivery approach.
 
@@ -21,6 +21,8 @@ Completed:
 - GitHub Actions CI/CD scaffolding
 - first live CI/CD deployment run
 - minimal browser frontend for upload, polling, retry, and results
+- multi-file browser submission that fans out one normal job per file
+- ephemeral data cleanup automation
 
 In progress next:
 
@@ -28,10 +30,20 @@ In progress next:
 
 Remaining after that:
 
+- clean the worktree and resolve intentional vs accidental leftovers:
+  - deleted `PHOTON_AGENT_BRIEF.md`
+  - deleted `docs/future-project-efficiency.md`
+  - untracked `Bills-1.png`
+  - untracked `Bills-2.png`
 - architecture diagram
 - demo instructions
-- ephemeral data cleanup automation
 - frontend polish and `Engineering` page
+- external Photon rename migration:
+  - rename the GitHub repo from `SwiftBatch` to `Photon`
+  - update the public repository links after the repo rename is real
+  - rename GitHub Actions variables/secrets from `SWIFTBATCH_*` to `PHOTON_*`
+  - migrate live DNS/ingress from `swiftbatch.abhinash.dev` hosts to `photon.abhinash.dev` hosts
+  - rename the local SSH alias and server ops references once the live hostnames are migrated
 
 Footnote:
 
@@ -72,14 +84,14 @@ The current product assumption is:
 - old uploads and outputs do not need long-term retention
 - cross-provider migration does not require preserving old state
 
-That means future cleanup work should explicitly delete:
+The cleanup runner now deletes:
 
 - old uploaded source objects
 - old generated outputs
 - old jobs and job attempts
 - old DLQ entries that are no longer useful for debugging
 
-## Next Phase Scope: CI/CD
+## CI/CD Notes
 
 The CI/CD scaffolding now delivers:
 
@@ -87,6 +99,7 @@ The CI/CD scaffolding now delivers:
 - Docker image build and push for:
   - `api`
   - `worker`
+  - `cleanup`
   - `migrate`
 - deployment workflow that can target a server by secret/config, not by hardcoded provider assumptions
 - deployment steps that are reusable for both:
@@ -106,16 +119,11 @@ Do not do these unless they become necessary:
 - managed-cloud-specific deployment logic
 - data-preserving migration tooling
 
-## Open Inputs Needed From The User
+## Current Focus
 
-Before the CI/CD phase can be completed end to end, the following are needed:
+The highest-value remaining work is now:
 
-- GitHub repo created and pushed
-- decision on `public` vs `private`
-- chosen server provider for the first deployment target
-- VPS access details
-- DNS hostnames for:
-  - API
-  - MinIO object endpoint
-  - MinIO console
-  - Grafana
+- README finalization
+- architecture diagram
+- demo instructions
+- frontend polish and `Engineering` page

@@ -1,10 +1,10 @@
 # Deployment Strategy
 
-This document records the current operational plan for deploying SwiftBatch.
+This document records the current operational plan for deploying Photon.
 
 ## Goal
 
-Deploy SwiftBatch in a way that is:
+Deploy Photon in a way that is:
 
 - cheap enough for a portfolio project
 - operationally credible
@@ -44,10 +44,10 @@ The current practical plan is:
 
 The current target hostnames are:
 
-- `swiftbatch.abhinash.dev` for the API
-- `storage.swiftbatch.abhinash.dev` for MinIO object access
-- `minio.swiftbatch.abhinash.dev` for the MinIO console
-- `grafana.swiftbatch.abhinash.dev` for Grafana
+- `photon.abhinash.dev` for the API
+- `storage.photon.abhinash.dev` for MinIO object access
+- `minio.photon.abhinash.dev` for the MinIO console
+- `grafana.photon.abhinash.dev` for Grafana
 
 These names should currently be managed in the `AWS Lightsail` DNS zone for `abhinash.dev`, which is the DNS UI currently in use.
 
@@ -108,9 +108,9 @@ Not:
 
 ## Cleanup Direction
 
-Because the system is demo-oriented and anonymous, cleanup should become part of normal operation.
+Because the system is demo-oriented and anonymous, cleanup is now part of normal operation.
 
-Later work should add automated cleanup for:
+The cleanup runner deletes:
 
 - expired uploads
 - expired generated outputs

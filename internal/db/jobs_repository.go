@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"time"
 )
 
 type JobsRepository struct {
@@ -116,6 +117,74 @@ ORDER BY id ASC
 	}
 
 	return outputs, rows.Err()
+}
+
+func (r *JobsRepository) ListCleanupCandidates(ctx context.Context, cutoff time.Time, limit int) ([]CleanupCandidate, error) {
+	const jobsQuery = `
+SELECT id, status, source_object_key, updated_at
+FROM jobs
+WHERE status IN ('completed', 'failed', 'dead_lettered')
+  AND updated_at < $1
+ORDER BY updated_at ASC
+LIMIT $2
+`
+
+	rows, err := r.db.QueryContext(ctx, jobsQuery, cutoff, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	candidates := make([]CleanupCandidate, 0, limit)
+	for rows.Next() {
+		var candidate CleanupCandidate
+		if err := rows.Scan(
+			&candidate.ID,
+			&candidate.Status,
+			&candidate.SourceObjectKey,
+			&candidate.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+
+		candidates = append(candidates, candidate)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	for index := range candidates {
+		outputs, err := r.ListOutputs(ctx, candidates[index].ID)
+		if err != nil {
+			return nil, err
+		}
+
+		candidates[index].OutputObjectKeys = make([]string, 0, len(outputs))
+		for _, output := range outputs {
+			candidates[index].OutputObjectKeys = append(candidates[index].OutputObjectKeys, output.ObjectKey)
+		}
+	}
+
+	return candidates, nil
+}
+
+func (r *JobsRepository) DeleteJob(ctx context.Context, id string) error {
+	result, err := r.db.ExecContext(ctx, `DELETE FROM jobs WHERE id = $1`, id)
+	if err != nil {
+		return err
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rowsAffected == 0 {
+		return ErrJobNotFound
+	}
+
+	return nil
 }
 
 func (r *JobsRepository) ReplaceJobOutputs(ctx context.Context, jobID string, outputs []ReplaceJobOutputsInput) error {

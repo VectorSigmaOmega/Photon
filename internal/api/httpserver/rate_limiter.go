@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/carousell/swiftbatch/internal/config"
+	"github.com/VectorSigmaOmega/photon/internal/config"
 	"golang.org/x/time/rate"
 )
 

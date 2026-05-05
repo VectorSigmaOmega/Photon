@@ -8,7 +8,7 @@ import (
 
 	"github.com/redis/go-redis/v9"
 
-	"github.com/carousell/swiftbatch/internal/config"
+	"github.com/VectorSigmaOmega/photon/internal/config"
 )
 
 type RedisQueue struct {
@@ -78,6 +78,54 @@ func (q *RedisQueue) QueueDepth(ctx context.Context) (int64, error) {
 
 func (q *RedisQueue) DLQDepth(ctx context.Context) (int64, error) {
 	return q.client.LLen(ctx, q.dlqKey).Result()
+}
+
+func (q *RedisQueue) PruneDLQBefore(ctx context.Context, cutoff time.Time) (int, error) {
+	entries, err := q.client.LRange(ctx, q.dlqKey, 0, -1).Result()
+	if err != nil {
+		return 0, err
+	}
+
+	if len(entries) == 0 {
+		return 0, nil
+	}
+
+	kept := make([]string, 0, len(entries))
+	removed := 0
+	for _, raw := range entries {
+		var entry DLQEntry
+		if err := json.Unmarshal([]byte(raw), &entry); err != nil {
+			kept = append(kept, raw)
+			continue
+		}
+
+		if entry.FailedAt.Before(cutoff) {
+			removed++
+			continue
+		}
+
+		kept = append(kept, raw)
+	}
+
+	if removed == 0 {
+		return 0, nil
+	}
+
+	pipe := q.client.TxPipeline()
+	pipe.Del(ctx, q.dlqKey)
+	if len(kept) > 0 {
+		values := make([]any, 0, len(kept))
+		for _, entry := range kept {
+			values = append(values, entry)
+		}
+		pipe.RPush(ctx, q.dlqKey, values...)
+	}
+
+	if _, err := pipe.Exec(ctx); err != nil {
+		return 0, err
+	}
+
+	return removed, nil
 }
 
 func (q *RedisQueue) Close() error {

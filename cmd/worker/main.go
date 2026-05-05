@@ -10,13 +10,13 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/carousell/swiftbatch/internal/config"
-	"github.com/carousell/swiftbatch/internal/observability"
-	"github.com/carousell/swiftbatch/internal/platform/app"
-	"github.com/carousell/swiftbatch/internal/platform/postgres"
-	"github.com/carousell/swiftbatch/internal/queue"
-	"github.com/carousell/swiftbatch/internal/storage"
-	"github.com/carousell/swiftbatch/internal/worker"
+	"github.com/VectorSigmaOmega/photon/internal/config"
+	"github.com/VectorSigmaOmega/photon/internal/observability"
+	"github.com/VectorSigmaOmega/photon/internal/platform/app"
+	"github.com/VectorSigmaOmega/photon/internal/platform/postgres"
+	"github.com/VectorSigmaOmega/photon/internal/queue"
+	"github.com/VectorSigmaOmega/photon/internal/storage"
+	"github.com/VectorSigmaOmega/photon/internal/worker"
 )
 
 func main() {
@@ -57,7 +57,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	workerMetrics, err := observability.NewWorkerMetrics("swiftbatch_worker")
+	workerMetrics, err := observability.NewWorkerMetrics("photon_worker")
 	if err != nil {
 		log.Error("initialize worker metrics", "err", err)
 		os.Exit(1)
