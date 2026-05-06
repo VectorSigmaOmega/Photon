@@ -118,7 +118,7 @@ export default function App() {
                 </div>
                 <div className="flex items-center gap-3">
                   <a
-                    href="https://github.com/VectorSigmaOmega/SwiftBatch"
+                    href="https://github.com/VectorSigmaOmega/Photon"
                     target="_blank"
                     rel="noreferrer"
                     className="font-mono text-[11px] uppercase tracking-widest text-ink-soft underline-offset-4 hover:text-ink hover:underline"

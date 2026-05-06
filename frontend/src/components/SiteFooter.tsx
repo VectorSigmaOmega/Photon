@@ -7,7 +7,7 @@ export function SiteFooter() {
       <span>Photon · Async image pipeline</span>
       <span className="flex items-center gap-4">
         <a
-          href="https://github.com/VectorSigmaOmega/SwiftBatch"
+          href="https://github.com/VectorSigmaOmega/Photon"
           target="_blank"
           rel="noreferrer"
           className="underline-offset-4 hover:underline"

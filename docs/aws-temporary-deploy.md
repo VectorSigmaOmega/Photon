@@ -19,10 +19,10 @@ Use one Ubuntu-based EC2 instance with:
 
 The DNS records would point to the instance for:
 
-- `swiftbatch.abhinash.dev`
-- `storage.swiftbatch.abhinash.dev`
-- `minio.swiftbatch.abhinash.dev`
-- `grafana.swiftbatch.abhinash.dev`
+- `photon.abhinash.dev`
+- `storage.photon.abhinash.dev`
+- `minio.photon.abhinash.dev`
+- `grafana.photon.abhinash.dev`
 
 ## Cost Model Reminder
 

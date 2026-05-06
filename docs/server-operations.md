@@ -6,21 +6,22 @@ This document records the current manual access and hardening state of the live 
 
 - provider: `SkyServer`
 - OS: `Ubuntu 22.04`
-- hostname: `node1.swiftbatch.abhinash.dev`
+- hostname: `node1.photon.abhinash.dev`
 - public IP: `161.248.163.187`
 
 ## DNS Control Plane
 
 The public hostnames for this project are currently managed in the `AWS Lightsail` DNS zone UI for `abhinash.dev`, not in Route 53.
 
-The current public names are still the legacy live deployment names:
+The current public names are:
 
-- `swiftbatch.abhinash.dev`
-- `storage.swiftbatch.abhinash.dev`
-- `minio.swiftbatch.abhinash.dev`
-- `grafana.swiftbatch.abhinash.dev`
+- `photon.abhinash.dev`
+- `storage.photon.abhinash.dev`
+- `minio.photon.abhinash.dev`
+- `grafana.photon.abhinash.dev`
+- `swiftbatch.abhinash.dev` (legacy homepage redirect)
 
-The product has since been renamed to `Photon`, but DNS names and SSH aliases have not been migrated yet.
+The product has been renamed to `Photon`. The old `swiftbatch.abhinash.dev` homepage host is retained only as a redirect to the new site.
 
 If a future note says "update DNS", it means:
 
