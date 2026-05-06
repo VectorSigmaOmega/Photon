@@ -28,9 +28,9 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      DEPLOY_HOST: ${{ vars.PHOTON_DEPLOY_HOST }}
-      DEPLOY_PORT: ${{ vars.PHOTON_DEPLOY_PORT || '22' }}
-      DEPLOY_USER: ${{ vars.PHOTON_DEPLOY_USER || 'deploy' }}
+      DEPLOY_HOST: ${{ vars.PHOTON_DEPLOY_HOST || vars.SWIFTBATCH_DEPLOY_HOST }}
+      DEPLOY_PORT: ${{ vars.PHOTON_DEPLOY_PORT || vars.SWIFTBATCH_DEPLOY_PORT || '22' }}
+      DEPLOY_USER: ${{ vars.PHOTON_DEPLOY_USER || vars.SWIFTBATCH_DEPLOY_USER || 'deploy' }}
 
     steps:
       - name: Checkout
@@ -114,7 +114,7 @@ jobs:
         shell: bash
         run: |
           install -m 700 -d ~/.ssh
-          printf '%s\n' '${{ secrets.PHOTON_DEPLOY_SSH_PRIVATE_KEY }}' > ~/.ssh/photon_deploy_key
+          printf '%s\n' '${{ secrets.PHOTON_DEPLOY_SSH_PRIVATE_KEY || secrets.SWIFTBATCH_DEPLOY_SSH_PRIVATE_KEY }}' > ~/.ssh/photon_deploy_key
           chmod 600 ~/.ssh/photon_deploy_key
           ssh-keyscan -p "$DEPLOY_PORT" -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts
 
@@ -140,9 +140,9 @@ jobs:
           GF_SECURITY_ADMIN_PASSWORD: ${{ secrets.GF_SECURITY_ADMIN_PASSWORD }}
           MINIO_ROOT_USER: ${{ secrets.MINIO_ROOT_USER }}
           MINIO_ROOT_PASSWORD: ${{ secrets.MINIO_ROOT_PASSWORD }}
-          PHOTON_POSTGRES_PASSWORD: ${{ secrets.PHOTON_POSTGRES_PASSWORD }}
-          PHOTON_STORAGE_ACCESS_KEY: ${{ secrets.PHOTON_STORAGE_ACCESS_KEY }}
-          PHOTON_STORAGE_SECRET_KEY: ${{ secrets.PHOTON_STORAGE_SECRET_KEY }}
+          PHOTON_POSTGRES_PASSWORD: ${{ secrets.PHOTON_POSTGRES_PASSWORD || secrets.SWIFTBATCH_POSTGRES_PASSWORD }}
+          PHOTON_STORAGE_ACCESS_KEY: ${{ secrets.PHOTON_STORAGE_ACCESS_KEY || secrets.SWIFTBATCH_STORAGE_ACCESS_KEY }}
+          PHOTON_STORAGE_SECRET_KEY: ${{ secrets.PHOTON_STORAGE_SECRET_KEY || secrets.SWIFTBATCH_STORAGE_SECRET_KEY }}
         run: |
           cat > /tmp/photon-remote-deploy.sh <<EOF
           #!/usr/bin/env bash
