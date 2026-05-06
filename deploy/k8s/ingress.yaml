@@ -1,12 +1,50 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: swiftbatch-api
-  namespace: swiftbatch
+  name: photon-api
+  namespace: photon
   annotations:
     traefik.ingress.kubernetes.io/router.entrypoints: websecure
     traefik.ingress.kubernetes.io/router.tls: "true"
     traefik.ingress.kubernetes.io/router.tls.certresolver: letsencrypt
+spec:
+  ingressClassName: traefik
+  tls:
+    - hosts:
+        - photon.abhinash.dev
+  rules:
+    - host: photon.abhinash.dev
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: photon-api
+                port:
+                  name: http
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: swiftbatch-home-redirect
+  namespace: photon
+spec:
+  redirectRegex:
+    regex: ^https://swiftbatch\.abhinash\.dev/.*$
+    replacement: https://photon.abhinash.dev/
+    permanent: true
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: swiftbatch-home-redirect
+  namespace: photon
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    traefik.ingress.kubernetes.io/router.tls: "true"
+    traefik.ingress.kubernetes.io/router.tls.certresolver: letsencrypt
+    traefik.ingress.kubernetes.io/router.middlewares: photon-swiftbatch-home-redirect@kubernetescrd
 spec:
   ingressClassName: traefik
   tls:
@@ -20,15 +58,15 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: swiftbatch-api
+                name: photon-api
                 port:
                   name: http
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: swiftbatch-minio-object
-  namespace: swiftbatch
+  name: photon-minio-object
+  namespace: photon
   annotations:
     traefik.ingress.kubernetes.io/router.entrypoints: websecure
     traefik.ingress.kubernetes.io/router.tls: "true"
@@ -37,24 +75,24 @@ spec:
   ingressClassName: traefik
   tls:
     - hosts:
-        - storage.swiftbatch.abhinash.dev
+        - storage.photon.abhinash.dev
   rules:
-    - host: storage.swiftbatch.abhinash.dev
+    - host: storage.photon.abhinash.dev
       http:
         paths:
           - path: /
             pathType: Prefix
             backend:
               service:
-                name: swiftbatch-minio
+                name: photon-minio
                 port:
                   name: s3
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: swiftbatch-minio-console
-  namespace: swiftbatch
+  name: photon-minio-console
+  namespace: photon
   annotations:
     traefik.ingress.kubernetes.io/router.entrypoints: websecure
     traefik.ingress.kubernetes.io/router.tls: "true"
@@ -63,24 +101,24 @@ spec:
   ingressClassName: traefik
   tls:
     - hosts:
-        - minio.swiftbatch.abhinash.dev
+        - minio.photon.abhinash.dev
   rules:
-    - host: minio.swiftbatch.abhinash.dev
+    - host: minio.photon.abhinash.dev
       http:
         paths:
           - path: /
             pathType: Prefix
             backend:
               service:
-                name: swiftbatch-minio
+                name: photon-minio
                 port:
                   name: console
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: swiftbatch-grafana
-  namespace: swiftbatch
+  name: photon-grafana
+  namespace: photon
   annotations:
     traefik.ingress.kubernetes.io/router.entrypoints: websecure
     traefik.ingress.kubernetes.io/router.tls: "true"
@@ -89,15 +127,15 @@ spec:
   ingressClassName: traefik
   tls:
     - hosts:
-        - grafana.swiftbatch.abhinash.dev
+        - grafana.photon.abhinash.dev
   rules:
-    - host: grafana.swiftbatch.abhinash.dev
+    - host: grafana.photon.abhinash.dev
       http:
         paths:
           - path: /
             pathType: Prefix
             backend:
               service:
-                name: swiftbatch-grafana
+                name: photon-grafana
                 port:
                   name: http

@@ -45,4 +45,4 @@ If SkyServer eventually provisions correctly and is stable enough, the move shou
 5. switch DNS records in the active DNS manager
 6. remove the AWS instance later
 
-Because SwiftBatch is currently an ephemeral-data demo, this move does not require preserving old jobs or old object storage contents.
+Because Photon is currently an ephemeral-data demo, this move does not require preserving old jobs or old object storage contents.

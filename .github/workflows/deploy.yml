@@ -20,7 +20,7 @@ permissions:
   packages: write
 
 concurrency:
-  group: swiftbatch-deploy-main
+  group: photon-deploy-main
   cancel-in-progress: true
 
 jobs:
@@ -28,9 +28,9 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      DEPLOY_HOST: ${{ vars.SWIFTBATCH_DEPLOY_HOST }}
-      DEPLOY_PORT: ${{ vars.SWIFTBATCH_DEPLOY_PORT || '22' }}
-      DEPLOY_USER: ${{ vars.SWIFTBATCH_DEPLOY_USER || 'deploy' }}
+      DEPLOY_HOST: ${{ vars.PHOTON_DEPLOY_HOST || vars.SWIFTBATCH_DEPLOY_HOST }}
+      DEPLOY_PORT: ${{ vars.PHOTON_DEPLOY_PORT || vars.SWIFTBATCH_DEPLOY_PORT || '22' }}
+      DEPLOY_USER: ${{ vars.PHOTON_DEPLOY_USER || vars.SWIFTBATCH_DEPLOY_USER || 'deploy' }}
 
     steps:
       - name: Checkout
@@ -58,9 +58,10 @@ jobs:
         run: |
           owner_lower="${GITHUB_REPOSITORY_OWNER,,}"
           echo "owner_lower=$owner_lower" >> "$GITHUB_OUTPUT"
-          echo "api_image=ghcr.io/$owner_lower/swiftbatch-api:${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
-          echo "worker_image=ghcr.io/$owner_lower/swiftbatch-worker:${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
-          echo "migrate_image=ghcr.io/$owner_lower/swiftbatch-migrate:${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
+          echo "api_image=ghcr.io/$owner_lower/photon-api:${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
+          echo "worker_image=ghcr.io/$owner_lower/photon-worker:${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
+          echo "migrate_image=ghcr.io/$owner_lower/photon-migrate:${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
+          echo "cleanup_image=ghcr.io/$owner_lower/photon-cleanup:${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
 
       - name: Login to GHCR
         uses: docker/login-action@v3
@@ -77,7 +78,7 @@ jobs:
           push: true
           tags: |
             ${{ steps.meta.outputs.api_image }}
-            ghcr.io/${{ steps.meta.outputs.owner_lower }}/swiftbatch-api:latest
+            ghcr.io/${{ steps.meta.outputs.owner_lower }}/photon-api:latest
 
       - name: Build and push worker image
         uses: docker/build-push-action@v6
@@ -87,7 +88,7 @@ jobs:
           push: true
           tags: |
             ${{ steps.meta.outputs.worker_image }}
-            ghcr.io/${{ steps.meta.outputs.owner_lower }}/swiftbatch-worker:latest
+            ghcr.io/${{ steps.meta.outputs.owner_lower }}/photon-worker:latest
 
       - name: Build and push migrate image
         uses: docker/build-push-action@v6
@@ -97,14 +98,24 @@ jobs:
           push: true
           tags: |
             ${{ steps.meta.outputs.migrate_image }}
-            ghcr.io/${{ steps.meta.outputs.owner_lower }}/swiftbatch-migrate:latest
+            ghcr.io/${{ steps.meta.outputs.owner_lower }}/photon-migrate:latest
+
+      - name: Build and push cleanup image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: deploy/docker/Dockerfile.cleanup
+          push: true
+          tags: |
+            ${{ steps.meta.outputs.cleanup_image }}
+            ghcr.io/${{ steps.meta.outputs.owner_lower }}/photon-cleanup:latest
 
       - name: Prepare SSH key
         shell: bash
         run: |
           install -m 700 -d ~/.ssh
-          printf '%s\n' '${{ secrets.SWIFTBATCH_DEPLOY_SSH_PRIVATE_KEY }}' > ~/.ssh/swiftbatch_deploy_key
-          chmod 600 ~/.ssh/swiftbatch_deploy_key
+          printf '%s\n' '${{ secrets.PHOTON_DEPLOY_SSH_PRIVATE_KEY || secrets.SWIFTBATCH_DEPLOY_SSH_PRIVATE_KEY }}' > ~/.ssh/photon_deploy_key
+          chmod 600 ~/.ssh/photon_deploy_key
           ssh-keyscan -p "$DEPLOY_PORT" -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts
 
       - name: Upload deployment bundle
@@ -113,10 +124,10 @@ jobs:
           tar \
             --exclude=.git \
             --exclude=.github \
-            -czf /tmp/swiftbatch-deploy.tgz \
+            -czf /tmp/photon-deploy.tgz \
             .
-          scp -P "$DEPLOY_PORT" -i ~/.ssh/swiftbatch_deploy_key /tmp/swiftbatch-deploy.tgz \
-            "$DEPLOY_USER@$DEPLOY_HOST:/tmp/swiftbatch-deploy.tgz"
+          scp -P "$DEPLOY_PORT" -i ~/.ssh/photon_deploy_key /tmp/photon-deploy.tgz \
+            "$DEPLOY_USER@$DEPLOY_HOST:/tmp/photon-deploy.tgz"
 
       - name: Deploy to k3s
         shell: bash
@@ -124,37 +135,39 @@ jobs:
           API_IMAGE: ${{ steps.meta.outputs.api_image }}
           WORKER_IMAGE: ${{ steps.meta.outputs.worker_image }}
           MIGRATE_IMAGE: ${{ steps.meta.outputs.migrate_image }}
+          CLEANUP_IMAGE: ${{ steps.meta.outputs.cleanup_image }}
           GF_SECURITY_ADMIN_USER: ${{ secrets.GF_SECURITY_ADMIN_USER }}
           GF_SECURITY_ADMIN_PASSWORD: ${{ secrets.GF_SECURITY_ADMIN_PASSWORD }}
           MINIO_ROOT_USER: ${{ secrets.MINIO_ROOT_USER }}
           MINIO_ROOT_PASSWORD: ${{ secrets.MINIO_ROOT_PASSWORD }}
-          SWIFTBATCH_POSTGRES_PASSWORD: ${{ secrets.SWIFTBATCH_POSTGRES_PASSWORD }}
-          SWIFTBATCH_STORAGE_ACCESS_KEY: ${{ secrets.SWIFTBATCH_STORAGE_ACCESS_KEY }}
-          SWIFTBATCH_STORAGE_SECRET_KEY: ${{ secrets.SWIFTBATCH_STORAGE_SECRET_KEY }}
+          PHOTON_POSTGRES_PASSWORD: ${{ secrets.PHOTON_POSTGRES_PASSWORD || secrets.SWIFTBATCH_POSTGRES_PASSWORD }}
+          PHOTON_STORAGE_ACCESS_KEY: ${{ secrets.PHOTON_STORAGE_ACCESS_KEY || secrets.SWIFTBATCH_STORAGE_ACCESS_KEY }}
+          PHOTON_STORAGE_SECRET_KEY: ${{ secrets.PHOTON_STORAGE_SECRET_KEY || secrets.SWIFTBATCH_STORAGE_SECRET_KEY }}
         run: |
-          cat > /tmp/swiftbatch-remote-deploy.sh <<EOF
+          cat > /tmp/photon-remote-deploy.sh <<EOF
           #!/usr/bin/env bash
           set -euo pipefail
-          rm -rf /home/deploy/swiftbatch
-          mkdir -p /home/deploy/swiftbatch
-          tar -xzf /tmp/swiftbatch-deploy.tgz -C /home/deploy/swiftbatch
-          cd /home/deploy/swiftbatch
+          rm -rf /home/deploy/photon
+          mkdir -p /home/deploy/photon
+          tar -xzf /tmp/photon-deploy.tgz -C /home/deploy/photon
+          cd /home/deploy/photon
           chmod +x scripts/deploy-k8s.sh
           export GF_SECURITY_ADMIN_USER=$(printf '%q' "$GF_SECURITY_ADMIN_USER")
           export GF_SECURITY_ADMIN_PASSWORD=$(printf '%q' "$GF_SECURITY_ADMIN_PASSWORD")
           export MINIO_ROOT_USER=$(printf '%q' "$MINIO_ROOT_USER")
           export MINIO_ROOT_PASSWORD=$(printf '%q' "$MINIO_ROOT_PASSWORD")
-          export SWIFTBATCH_POSTGRES_PASSWORD=$(printf '%q' "$SWIFTBATCH_POSTGRES_PASSWORD")
-          export SWIFTBATCH_STORAGE_ACCESS_KEY=$(printf '%q' "$SWIFTBATCH_STORAGE_ACCESS_KEY")
-          export SWIFTBATCH_STORAGE_SECRET_KEY=$(printf '%q' "$SWIFTBATCH_STORAGE_SECRET_KEY")
-          export SWIFTBATCH_API_IMAGE=$(printf '%q' "$API_IMAGE")
-          export SWIFTBATCH_WORKER_IMAGE=$(printf '%q' "$WORKER_IMAGE")
-          export SWIFTBATCH_MIGRATE_IMAGE=$(printf '%q' "$MIGRATE_IMAGE")
+          export PHOTON_POSTGRES_PASSWORD=$(printf '%q' "$PHOTON_POSTGRES_PASSWORD")
+          export PHOTON_STORAGE_ACCESS_KEY=$(printf '%q' "$PHOTON_STORAGE_ACCESS_KEY")
+          export PHOTON_STORAGE_SECRET_KEY=$(printf '%q' "$PHOTON_STORAGE_SECRET_KEY")
+          export PHOTON_API_IMAGE=$(printf '%q' "$API_IMAGE")
+          export PHOTON_WORKER_IMAGE=$(printf '%q' "$WORKER_IMAGE")
+          export PHOTON_MIGRATE_IMAGE=$(printf '%q' "$MIGRATE_IMAGE")
+          export PHOTON_CLEANUP_IMAGE=$(printf '%q' "$CLEANUP_IMAGE")
           ./scripts/deploy-k8s.sh
           EOF
 
-          scp -P "$DEPLOY_PORT" -i ~/.ssh/swiftbatch_deploy_key /tmp/swiftbatch-remote-deploy.sh \
-            "$DEPLOY_USER@$DEPLOY_HOST:/tmp/swiftbatch-remote-deploy.sh"
+          scp -P "$DEPLOY_PORT" -i ~/.ssh/photon_deploy_key /tmp/photon-remote-deploy.sh \
+            "$DEPLOY_USER@$DEPLOY_HOST:/tmp/photon-remote-deploy.sh"
 
-          ssh -p "$DEPLOY_PORT" -i ~/.ssh/swiftbatch_deploy_key "$DEPLOY_USER@$DEPLOY_HOST" \
-            'bash /tmp/swiftbatch-remote-deploy.sh'
+          ssh -p "$DEPLOY_PORT" -i ~/.ssh/photon_deploy_key "$DEPLOY_USER@$DEPLOY_HOST" \
+            'bash /tmp/photon-remote-deploy.sh'

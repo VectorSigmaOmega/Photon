@@ -1,6 +1,6 @@
 # CI/CD Setup
 
-This document explains how the GitHub Actions scaffolding deploys SwiftBatch to the SkyServer VPS.
+This document explains how the GitHub Actions scaffolding deploys Photon to the SkyServer VPS.
 
 ## Workflow Shape
 
@@ -13,7 +13,7 @@ The repo now contains two workflows:
 - `.github/workflows/deploy.yml`
   - runs on pushes to `main`
   - can also be started manually with `workflow_dispatch`
-  - builds and pushes app images to `GHCR`
+  - builds and pushes `api`, `worker`, `cleanup`, and `migrate` images to `GHCR`
   - uploads the repo contents to the VPS over SSH
   - runs `scripts/deploy-k8s.sh` on the server
 
@@ -24,7 +24,7 @@ The deployment workflow does not keep Kubernetes secrets in the repo.
 Instead it:
 
 - pushes immutable image tags to `GHCR`
-- creates the `swiftbatch-secrets` Kubernetes secret from GitHub repository secrets
+- creates the `photon-secrets` Kubernetes secret from GitHub repository secrets
 - applies the manifests
 - waits for deployment rollouts
 
@@ -38,11 +38,11 @@ Set these in:
 
 Required variables:
 
-- `SWIFTBATCH_DEPLOY_HOST`
+- `PHOTON_DEPLOY_HOST`
   - current value: `161.248.163.187`
-- `SWIFTBATCH_DEPLOY_USER`
+- `PHOTON_DEPLOY_USER`
   - current value: `deploy`
-- `SWIFTBATCH_DEPLOY_PORT`
+- `PHOTON_DEPLOY_PORT`
   - current value: `22`
 
 ## Required GitHub Repository Secrets
@@ -53,15 +53,15 @@ Set these in:
 
 Required secrets:
 
-- `SWIFTBATCH_DEPLOY_SSH_PRIVATE_KEY`
+- `PHOTON_DEPLOY_SSH_PRIVATE_KEY`
   - the private key that matches the server access path for `deploy`
 - `GF_SECURITY_ADMIN_USER`
 - `GF_SECURITY_ADMIN_PASSWORD`
 - `MINIO_ROOT_USER`
 - `MINIO_ROOT_PASSWORD`
-- `SWIFTBATCH_POSTGRES_PASSWORD`
-- `SWIFTBATCH_STORAGE_ACCESS_KEY`
-- `SWIFTBATCH_STORAGE_SECRET_KEY`
+- `PHOTON_POSTGRES_PASSWORD`
+- `PHOTON_STORAGE_ACCESS_KEY`
+- `PHOTON_STORAGE_SECRET_KEY`
 
 ## Notes On GHCR Credentials
 

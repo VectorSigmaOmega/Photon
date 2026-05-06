@@ -47,6 +47,14 @@ type JobOutput struct {
 	CreatedAt   time.Time `json:"created_at"`
 }
 
+type CleanupCandidate struct {
+	ID               string
+	OutputObjectKeys []string
+	SourceObjectKey  string
+	Status           JobStatus
+	UpdatedAt        time.Time
+}
+
 var (
 	ErrJobNotFound      = errors.New("job not found")
 	ErrRetryNotAllowed  = errors.New("retry is only allowed for failed or dead_lettered jobs")

@@ -9,13 +9,13 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/carousell/swiftbatch/internal/api/httpserver"
-	"github.com/carousell/swiftbatch/internal/config"
-	"github.com/carousell/swiftbatch/internal/observability"
-	"github.com/carousell/swiftbatch/internal/platform/app"
-	"github.com/carousell/swiftbatch/internal/platform/postgres"
-	"github.com/carousell/swiftbatch/internal/queue"
-	"github.com/carousell/swiftbatch/internal/storage"
+	"github.com/VectorSigmaOmega/photon/internal/api/httpserver"
+	"github.com/VectorSigmaOmega/photon/internal/config"
+	"github.com/VectorSigmaOmega/photon/internal/observability"
+	"github.com/VectorSigmaOmega/photon/internal/platform/app"
+	"github.com/VectorSigmaOmega/photon/internal/platform/postgres"
+	"github.com/VectorSigmaOmega/photon/internal/queue"
+	"github.com/VectorSigmaOmega/photon/internal/storage"
 )
 
 func main() {
@@ -56,7 +56,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	metrics, err := observability.NewMetrics("swiftbatch_api")
+	metrics, err := observability.NewMetrics("photon_api")
 	if err != nil {
 		log.Error("initialize metrics", "err", err)
 		os.Exit(1)

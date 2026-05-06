@@ -1,0 +1,114 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-05-01T11:30:00.000Z",
+  "title": "Design System: Photon",
+  "extensions": {
+    "colorMeta": {
+      "primary": {
+        "role": "primary",
+        "displayName": "Oxide Signal Red",
+        "canonical": "oklch(58% 0.21 28)",
+        "tonalRamp": [
+          "oklch(20% 0.21 28)",
+          "oklch(30% 0.21 28)",
+          "oklch(40% 0.21 28)",
+          "oklch(50% 0.21 28)",
+          "oklch(60% 0.21 28)",
+          "oklch(70% 0.15 28)",
+          "oklch(80% 0.1 28)",
+          "oklch(90% 0.05 28)"
+        ]
+      },
+      "neutral-bg": {
+        "role": "neutral",
+        "displayName": "Aged Paper White",
+        "canonical": "oklch(96% 0.012 75)",
+        "tonalRamp": [
+          "oklch(15% 0.012 75)",
+          "oklch(30% 0.012 75)",
+          "oklch(45% 0.012 75)",
+          "oklch(60% 0.012 75)",
+          "oklch(75% 0.012 75)",
+          "oklch(85% 0.012 75)",
+          "oklch(93% 0.012 75)",
+          "oklch(98% 0.005 75)"
+        ]
+      },
+      "neutral-fg": {
+        "role": "neutral",
+        "displayName": "Warm Iron Ink",
+        "canonical": "oklch(18% 0.02 60)"
+      },
+      "accent-trace": {
+        "role": "accent",
+        "displayName": "Circuitry Trace Blue",
+        "canonical": "oklch(70% 0.09 220)"
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Brutal Display",
+        "purpose": "Hero headers and brand moments."
+      },
+      "mono": {
+        "displayName": "Technical Mono",
+        "purpose": "Metadata, status, and system readout."
+      }
+    },
+    "motion": [
+      {
+        "name": "flow-linear",
+        "value": "linear infinite",
+        "purpose": "Continuous trace line animation."
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The main action trigger.",
+      "html": "<button class=\"ds-btn-primary\"><span class=\"ds-pip\"></span>RUN PIPELINE</button>",
+      "css": ".ds-btn-primary { background: oklch(18% 0.02 60); color: oklch(96% 0.012 75); padding: 12px 20px; font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.18em; border: none; border-radius: 2px; display: inline-flex; align-items: center; gap: 12px; transition: background 0.2s; cursor: pointer; } .ds-btn-primary:hover { background: oklch(58% 0.21 28); } .ds-pip { width: 6px; height: 6px; background: oklch(58% 0.21 28); border-radius: 50%; transition: background 0.2s; } .ds-btn-primary:hover .ds-pip { background: oklch(96% 0.012 75); }"
+    },
+    {
+      "name": "Technical Section Header",
+      "kind": "custom",
+      "description": "Grounded header with technical kicker.",
+      "html": "<div class=\"ds-section-header\"><span class=\"ds-kicker\">fig.01</span><div class=\"ds-rule\"></div><h2 class=\"ds-title\">Job Lifecycle</h2></div>",
+      "css": ".ds-section-header { display: flex; align-items: baseline; gap: 16px; width: 100%; } .ds-kicker { font-family: 'IBM Plex Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.18em; color: oklch(48% 0.21 28); } .ds-rule { flex: 1; height: 1px; background: oklch(18% 0.02 60 / 0.15); } .ds-title { font-family: 'Inter Tight', sans-serif; font-size: 18px; font-weight: 600; color: oklch(32% 0.02 60); margin: 0; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Archival Ledger",
+    "overview": "Photon's visual system is designed to convey technical precision and engineering competence. It rejects the soft, generic aesthetic of modern SaaS dashboards in favor of a 'paper and ink' materiality that feels grounded, archival, and permanent.",
+    "keyCharacteristics": [
+      "Technical Transparency",
+      "Material Precision",
+      "High-Signal Density"
+    ],
+    "rules": [
+      {
+        "name": "The One Voice Rule",
+        "body": "The primary signal color is used on ≤10% of any given screen.",
+        "section": "colors"
+      },
+      {
+        "name": "The Material Grid Rule",
+        "body": "Visual grouping is achieved via hairline borders and background shifts. Shadows are prohibited.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do use OKLCH for all color declarations.",
+      "Do surface technical details using the monospaced Label style.",
+      "Do use the 32px grid pattern for background structure."
+    ],
+    "donts": [
+      "Don't use generic SaaS 'Stripe-clone' minimalism or soft shadows.",
+      "Don't use border-left greater than 1px as a colored stripe.",
+      "Don't use gradient text or glassmorphism effects."
+    ]
+  }
+}

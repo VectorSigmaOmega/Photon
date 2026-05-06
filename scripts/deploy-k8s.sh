@@ -24,15 +24,16 @@ require_env GF_SECURITY_ADMIN_USER
 require_env GF_SECURITY_ADMIN_PASSWORD
 require_env MINIO_ROOT_USER
 require_env MINIO_ROOT_PASSWORD
-require_env SWIFTBATCH_POSTGRES_PASSWORD
-require_env SWIFTBATCH_STORAGE_ACCESS_KEY
-require_env SWIFTBATCH_STORAGE_SECRET_KEY
-require_env SWIFTBATCH_API_IMAGE
-require_env SWIFTBATCH_WORKER_IMAGE
-require_env SWIFTBATCH_MIGRATE_IMAGE
+require_env PHOTON_POSTGRES_PASSWORD
+require_env PHOTON_STORAGE_ACCESS_KEY
+require_env PHOTON_STORAGE_SECRET_KEY
+require_env PHOTON_API_IMAGE
+require_env PHOTON_WORKER_IMAGE
+require_env PHOTON_MIGRATE_IMAGE
+require_env PHOTON_CLEANUP_IMAGE
 
-namespace="swiftbatch"
-kubeconfig="${SWIFTBATCH_KUBECONFIG:-/home/deploy/.kube/config}"
+namespace="photon"
+kubeconfig="${PHOTON_KUBECONFIG:-/home/deploy/.kube/config}"
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 tmpdir="$(mktemp -d)"
 trap 'rm -rf "$tmpdir"' EXIT
@@ -53,40 +54,44 @@ resources:
   - observability.yaml
   - ingress.yaml
 images:
-  - name: swiftbatch-api
-    newName: $(image_name "$SWIFTBATCH_API_IMAGE")
-    newTag: $(image_tag "$SWIFTBATCH_API_IMAGE")
-  - name: swiftbatch-worker
-    newName: $(image_name "$SWIFTBATCH_WORKER_IMAGE")
-    newTag: $(image_tag "$SWIFTBATCH_WORKER_IMAGE")
-  - name: swiftbatch-migrate
-    newName: $(image_name "$SWIFTBATCH_MIGRATE_IMAGE")
-    newTag: $(image_tag "$SWIFTBATCH_MIGRATE_IMAGE")
+  - name: photon-api
+    newName: $(image_name "$PHOTON_API_IMAGE")
+    newTag: $(image_tag "$PHOTON_API_IMAGE")
+  - name: photon-worker
+    newName: $(image_name "$PHOTON_WORKER_IMAGE")
+    newTag: $(image_tag "$PHOTON_WORKER_IMAGE")
+  - name: photon-migrate
+    newName: $(image_name "$PHOTON_MIGRATE_IMAGE")
+    newTag: $(image_tag "$PHOTON_MIGRATE_IMAGE")
+  - name: photon-cleanup
+    newName: $(image_name "$PHOTON_CLEANUP_IMAGE")
+    newTag: $(image_tag "$PHOTON_CLEANUP_IMAGE")
 EOF
 
 kubectl --kubeconfig "$kubeconfig" create namespace "$namespace" \
   --dry-run=client -o yaml | kubectl --kubeconfig "$kubeconfig" apply -f -
 
-kubectl --kubeconfig "$kubeconfig" create secret generic swiftbatch-secrets \
+kubectl --kubeconfig "$kubeconfig" create secret generic photon-secrets \
   --namespace "$namespace" \
   --from-literal=GF_SECURITY_ADMIN_PASSWORD="$GF_SECURITY_ADMIN_PASSWORD" \
   --from-literal=GF_SECURITY_ADMIN_USER="$GF_SECURITY_ADMIN_USER" \
   --from-literal=MINIO_ROOT_PASSWORD="$MINIO_ROOT_PASSWORD" \
   --from-literal=MINIO_ROOT_USER="$MINIO_ROOT_USER" \
-  --from-literal=POSTGRES_PASSWORD="$SWIFTBATCH_POSTGRES_PASSWORD" \
-  --from-literal=SWIFTBATCH_POSTGRES_PASSWORD="$SWIFTBATCH_POSTGRES_PASSWORD" \
-  --from-literal=SWIFTBATCH_STORAGE_ACCESS_KEY="$SWIFTBATCH_STORAGE_ACCESS_KEY" \
-  --from-literal=SWIFTBATCH_STORAGE_SECRET_KEY="$SWIFTBATCH_STORAGE_SECRET_KEY" \
+  --from-literal=POSTGRES_PASSWORD="$PHOTON_POSTGRES_PASSWORD" \
+  --from-literal=PHOTON_POSTGRES_PASSWORD="$PHOTON_POSTGRES_PASSWORD" \
+  --from-literal=PHOTON_STORAGE_ACCESS_KEY="$PHOTON_STORAGE_ACCESS_KEY" \
+  --from-literal=PHOTON_STORAGE_SECRET_KEY="$PHOTON_STORAGE_SECRET_KEY" \
   --dry-run=client -o yaml | kubectl --kubeconfig "$kubeconfig" apply -f -
 
 kubectl --kubeconfig "$kubeconfig" apply -k "$tmpdir/k8s"
 
-kubectl --kubeconfig "$kubeconfig" rollout status deployment/swiftbatch-postgres -n "$namespace" --timeout=300s
-kubectl --kubeconfig "$kubeconfig" rollout status deployment/swiftbatch-redis -n "$namespace" --timeout=300s
-kubectl --kubeconfig "$kubeconfig" rollout status deployment/swiftbatch-minio -n "$namespace" --timeout=300s
-kubectl --kubeconfig "$kubeconfig" rollout status deployment/swiftbatch-api -n "$namespace" --timeout=300s
-kubectl --kubeconfig "$kubeconfig" rollout status deployment/swiftbatch-worker -n "$namespace" --timeout=300s
-kubectl --kubeconfig "$kubeconfig" rollout status deployment/swiftbatch-prometheus -n "$namespace" --timeout=300s
-kubectl --kubeconfig "$kubeconfig" rollout status deployment/swiftbatch-grafana -n "$namespace" --timeout=300s
+kubectl --kubeconfig "$kubeconfig" rollout status deployment/photon-postgres -n "$namespace" --timeout=300s
+kubectl --kubeconfig "$kubeconfig" rollout status deployment/photon-redis -n "$namespace" --timeout=300s
+kubectl --kubeconfig "$kubeconfig" rollout status deployment/photon-minio -n "$namespace" --timeout=300s
+kubectl --kubeconfig "$kubeconfig" rollout status deployment/photon-api -n "$namespace" --timeout=300s
+kubectl --kubeconfig "$kubeconfig" rollout status deployment/photon-worker -n "$namespace" --timeout=300s
+kubectl --kubeconfig "$kubeconfig" rollout status deployment/photon-cleanup -n "$namespace" --timeout=300s
+kubectl --kubeconfig "$kubeconfig" rollout status deployment/photon-prometheus -n "$namespace" --timeout=300s
+kubectl --kubeconfig "$kubeconfig" rollout status deployment/photon-grafana -n "$namespace" --timeout=300s
 
 kubectl --kubeconfig "$kubeconfig" get pods -n "$namespace"

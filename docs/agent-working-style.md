@@ -36,6 +36,10 @@ Before pushing:
 
 CI/CD is a deployment verification step, not the first place to discover obvious frontend breakage.
 
+For redesign-specific guardrails, also read:
+
+- `docs/frontend-iteration-guidelines.md`
+
 ## Verification Rule
 
 Verification should match the type of change.
@@ -85,6 +89,7 @@ Avoid:
 ## Repository-Specific Notes
 
 - the current frontend is a minimal UI served directly by the Go API, not a separate frontend app
+- the current frontend source now lives in `frontend/` and builds into `internal/api/httpserver/static/`
 - the deployment target is a single-node `k3s` cluster on the SkyServer VPS
 - public DNS for `abhinash.dev` is managed in the AWS Lightsail DNS UI
 - GitHub Actions deploys to the server on qualifying pushes to `main`

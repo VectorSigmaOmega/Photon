@@ -6,3 +6,10 @@ dist/
 tmp/
 coverage.out
 Screenshot *.png
+.playwright-cli/
+*.tsbuildinfo
+*:Zone.Identifier
+/Bills-*.png
+/Linear.png
+/new-ui.png
+/frontend/.debug/

@@ -7,7 +7,7 @@ import (
 
 	_ "github.com/jackc/pgx/v5/stdlib"
 
-	"github.com/carousell/swiftbatch/internal/config"
+	"github.com/VectorSigmaOmega/photon/internal/config"
 )
 
 func Open(ctx context.Context, cfg config.PostgresConfig) (*sql.DB, error) {

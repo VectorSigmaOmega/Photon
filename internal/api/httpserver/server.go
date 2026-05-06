@@ -11,12 +11,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/carousell/swiftbatch/internal/config"
-	dbrepo "github.com/carousell/swiftbatch/internal/db"
-	"github.com/carousell/swiftbatch/internal/imageproc"
-	"github.com/carousell/swiftbatch/internal/observability"
-	"github.com/carousell/swiftbatch/internal/queue"
-	"github.com/carousell/swiftbatch/internal/storage"
+	"github.com/VectorSigmaOmega/photon/internal/config"
+	dbrepo "github.com/VectorSigmaOmega/photon/internal/db"
+	"github.com/VectorSigmaOmega/photon/internal/imageproc"
+	"github.com/VectorSigmaOmega/photon/internal/observability"
+	"github.com/VectorSigmaOmega/photon/internal/queue"
+	"github.com/VectorSigmaOmega/photon/internal/storage"
 	"github.com/google/uuid"
 )
 
